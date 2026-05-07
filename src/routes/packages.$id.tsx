@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronRight, Star, Clock, Check, X, MessageCircle, ChevronDown } from "lucide-react";
-import { getPackage, packages } from "@/data/packages";
+import { getPackage, packages, type Package } from "@/data/packages";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useBookingModal } from "@/components/site/BookingModal";
 
