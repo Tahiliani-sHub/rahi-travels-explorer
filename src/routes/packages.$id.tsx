@@ -32,7 +32,7 @@ export const Route = createFileRoute("/packages/$id")({
 });
 
 function PackageDetail() {
-  const { pkg } = Route.useLoaderData();
+  const { pkg } = Route.useLoaderData() as { pkg: Package };
   const { open } = useBookingModal();
   const [activeImg, setActiveImg] = useState(pkg.image);
   const [activeDay, setActiveDay] = useState(1);
