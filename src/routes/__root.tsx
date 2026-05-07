@@ -113,7 +113,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <BookingModalProvider>
+        <Header />
+        <main className="pt-16 min-h-screen">
+          <Outlet />
+        </main>
+        <Footer />
+      </BookingModalProvider>
     </QueryClientProvider>
   );
 }
