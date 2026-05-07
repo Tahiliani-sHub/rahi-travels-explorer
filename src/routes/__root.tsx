@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { Header, Footer } from "@/components/site/Layout";
+import { BookingModalProvider } from "@/components/site/BookingModal";
 
 function NotFoundComponent() {
   return (
