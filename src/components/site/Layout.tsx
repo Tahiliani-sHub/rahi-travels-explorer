@@ -42,7 +42,7 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="lg:hidden border-t bg-white">
+        <div className="lg:hidden border-t bg-gradient-to-b from-white to-gray-50 shadow-lg">
           <div className="px-5 py-4 flex flex-col gap-4">
             <Link to="/" className="nav-link" onClick={() => setOpen(false)}>Home</Link>
             <Link to="/packages" className="nav-link" onClick={() => setOpen(false)}>Packages</Link>
@@ -57,7 +57,7 @@ export function Header() {
 
 export function Footer() {
   return (
-    <footer className="border-t bg-white mt-20">
+    <footer className="bg-gradient-to-b from-gray-50 to-white mt-20 border-t border-gray-100">
       <div className="mx-auto max-w-7xl px-5 py-16 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <div className="flex items-center gap-2.5 mb-4">
@@ -87,7 +87,7 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t py-6 text-center text-sm text-muted-foreground">© {new Date().getFullYear()} Rahi Travels — A Rahi Group company</div>
+      <div className="border-t border-gray-100 py-6 text-center text-sm text-muted-foreground">© {new Date().getFullYear()} Rahi Travels — A Rahi Group company</div>
     </footer>
   );
 }

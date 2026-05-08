@@ -15,9 +15,9 @@ export const Route = createFileRoute("/about")({
 });
 
 const team = [
-  { name: "Yasmine Ben Salah", role: "Head of Operations, Tunis", phone: "+216 71 000 001", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80" },
-  { name: "Karim Trabelsi", role: "Senior Travel Designer", phone: "+216 71 000 002", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80" },
-  { name: "Lina Mansouri", role: "Wellness & Retreats Lead", phone: "+216 71 000 003", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80" },
+  { name: "Yasmine Ben Salah", role: "Head of Operations, Tunis", phone: "+216 71 000 001", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80" },
+  { name: "Karim Trabelsi", role: "Senior Travel Designer", phone: "+216 71 000 002", img: "https://images.unsplash.com/photo-1541745537419-a6a79b9b5bfa?auto=format&fit=crop&w=400&q=80" },
+  { name: "Lina Mansouri", role: "Wellness & Retreats Lead", phone: "+216 71 000 003", img: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=400&q=80" },
 ];
 
 const values = [
@@ -49,8 +49,8 @@ function About() {
             </p>
             <button onClick={() => open("Custom Trip")} className="btn-primary">Plan my trip</button>
           </div>
-          <div className="rounded-2xl overflow-hidden aspect-[4/3]">
-            <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80" alt="Our team" className="w-full h-full object-cover" />
+          <div className="rounded-[2rem] overflow-hidden shadow-[0_24px_64px_rgba(40,40,40,0.08)]">
+            <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80" alt="Our team" className="w-full h-full object-cover" />
           </div>
         </div>
       </section>

@@ -43,7 +43,7 @@
   --brand-muted: #757575;
   --brand-border: #d1d5db;
 
-  --background: #ffffff;
+  --background: #f0f2f5;
   --foreground: #111827;
   --card: #ffffff;
   --card-foreground: #111827;
@@ -54,7 +54,7 @@
   --primary-dark: #235e00;
   --secondary: #f3f4f6;
   --secondary-foreground: #111827;
-  --muted: #f3f4f6;
+  --muted: #e8eaed;
   --muted-foreground: #757575;
   --accent: #f3f4f6;
   --accent-foreground: #111827;
@@ -65,7 +65,14 @@
   --ring: #2b7600;
   --link: #0000ee;
 
-  --header-bg: rgba(255, 255, 255, 0.85);
+  --header-bg: rgba(240, 242, 245, 0.85);
+  /* Neomorphic shadows */
+  --neo-light-shadow: -8px -8px 20px 0px rgba(255, 255, 255, 0.9), inset -2px -2px 5px 0px rgba(255, 255, 255, 0.9);
+  --neo-dark-shadow: 8px 8px 20px 0px rgba(0, 0, 0, 0.08), inset 2px 2px 5px 0px rgba(0, 0, 0, 0.04);
+  --neo-shadow: -8px -8px 20px 0px rgba(255, 255, 255, 0.9), 8px 8px 20px 0px rgba(0, 0, 0, 0.08);
+  --neo-shadow-hover: -12px -12px 30px 0px rgba(255, 255, 255, 0.95), 12px 12px 30px 0px rgba(0, 0, 0, 0.12);
+  --neo-shadow-pressed: inset -4px -4px 10px 0px rgba(255, 255, 255, 0.8), inset 4px 4px 10px 0px rgba(0, 0, 0, 0.06);
+  
   --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04);
   --shadow-card-hover: 0 10px 30px -10px rgba(17, 24, 39, 0.18);
 }
@@ -126,60 +133,88 @@
     background: var(--header-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--brand-border);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
   }
+  
+  /* Neomorphic Buttons */
   .btn-primary {
     background: var(--brand-primary);
     color: #fff;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 10px 20px;
     font-weight: 600;
     font-size: 0.95rem;
-    transition: background 150ms ease, transform 150ms ease;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
     gap: 8px;
     line-height: 1;
+    border: none;
+    box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.8), 4px 4px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
   }
-  .btn-primary:hover { background: var(--brand-primary-dark); }
+  .btn-primary:hover {
+    box-shadow: -6px -6px 15px rgba(255, 255, 255, 0.9), 6px 6px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+  .btn-primary:active {
+    box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.5), inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
+  }
+  
   .btn-outline {
-    background: #fff;
+    background: #ffffff;
     color: var(--brand-fg);
-    border: 1px solid var(--brand-border);
-    border-radius: 8px;
+    border: none;
+    border-radius: 12px;
     padding: 10px 20px;
     font-weight: 600;
     font-size: 0.95rem;
-    transition: all 150ms ease;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.9), 4px 4px 10px rgba(0, 0, 0, 0.08);
   }
-  .btn-outline:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+  .btn-outline:hover {
+    box-shadow: -6px -6px 15px rgba(255, 255, 255, 0.95), 6px 6px 15px rgba(0, 0, 0, 0.12);
+    color: var(--brand-primary);
+    transform: translateY(-2px);
+  }
+  .btn-outline:active {
+    box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.8), inset 2px 2px 5px rgba(0, 0, 0, 0.08);
+    transform: translateY(0);
+  }
+  
   .nav-link {
     color: var(--brand-fg);
     font-weight: 500;
     font-size: 0.95rem;
-    transition: color 150ms ease;
+    transition: color 200ms ease;
   }
   .nav-link:hover { color: var(--brand-primary); }
+  
   .text-link {
     color: var(--brand-link);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+  
+  /* Neomorphic Card Surface */
   .card-surface {
-    background: #fff;
-    border: 1px solid var(--brand-border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
-    transition: box-shadow 200ms ease, transform 200ms ease;
+    background: #ffffff;
+    border: none;
+    border-radius: 20px;
+    box-shadow: -8px -8px 20px rgba(255, 255, 255, 0.95), 8px 8px 20px rgba(0, 0, 0, 0.08);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
   .card-surface:hover {
-    box-shadow: var(--shadow-card-hover);
-    transform: translateY(-2px);
+    box-shadow: -12px -12px 30px rgba(255, 255, 255, 1), 12px 12px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
   }
+  
   .logo-mark {
     width: 36px;
     height: 36px;
@@ -190,5 +225,32 @@
     justify-content: center;
     color: #fff;
     font-weight: 800;
+    box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.7), 4px 4px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Neomorphic Input Fields */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: inset -4px -4px 10px rgba(255, 255, 255, 0.9), inset 4px 4px 10px rgba(0, 0, 0, 0.06);
+    transition: all 200ms ease;
+    padding: 12px 16px;
+  }
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="tel"]:focus,
+  input[type="date"]:focus,
+  input[type="number"]:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    box-shadow: inset -4px -4px 10px rgba(255, 255, 255, 0.9), inset 4px 4px 10px rgba(0, 0, 0, 0.08), 0 0 0 3px var(--primary);
   }
 }
