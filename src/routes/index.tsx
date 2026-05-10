@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, Calendar, Users, Star, Award, Globe, Heart, Shield, Sparkles, Phone } from "lucide-react";
+import { Search, Calendar, Users, Star, Award, Globe, Heart, Shield, Sparkles, Phone, Plane, Building, Bed, Train } from "lucide-react";
 import { packages } from "@/data/packages";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useBookingModal } from "@/components/site/BookingModal";
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Rahi Travels — Premium Tunisia Travel Booking Platform" },
-      { name: "description", content: "Discover Tunisia with curated beach, desert, heritage and wellness packages. Book in minutes via WhatsApp." },
+      { name: "description", content: "Discover Tunisia with curated beach, desert, heritage and wellness packages. Book flights, hotels and complete trips." },
       { property: "og:title", content: "Rahi Travels — Premium Tunisia Travel" },
       { property: "og:description", content: "Curated Tunisia tours: Sahara, Djerba, Sidi Bou Said, Carthage and more." },
     ],
@@ -63,14 +63,49 @@ const heroPreviewImages = [
             </p>
           </div>
 
-          {/* Search box */}
-          <div className="bg-white border border-border rounded-2xl shadow-lg p-3 grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 max-w-4xl">
-            <SearchField icon={<Search className="w-4 h-4" />} label="Destination" placeholder="Djerba, Sahara, Sidi Bou Said..." />
-            <SearchField icon={<Calendar className="w-4 h-4" />} label="Travel Date" type="date" />
-            <SearchField icon={<Users className="w-4 h-4" />} label="Travellers" placeholder="2 Adults" />
-            <button onClick={() => open("Custom Trip Search")} className="btn-primary justify-center md:px-8">
-              <Search className="w-4 h-4" /> Search
-            </button>
+          <div className="bg-white border border-border rounded-3xl shadow-lg p-6 max-w-5xl">
+            <div className="grid gap-4 md:grid-cols-4">
+              <Link to="/flights" className="group rounded-3xl border border-border p-6 transition hover:border-primary hover:bg-primary/5">
+                <div className="flex items-center gap-3 text-primary mb-4">
+                  <Plane className="w-5 h-5" />
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.24em]">Flights</div>
+                    <div className="text-lg font-semibold">Search flight deals</div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Find the best airfares with routes across Tunisia and international destinations.</p>
+              </Link>
+              <Link to="/hotels" className="group rounded-3xl border border-border p-6 transition hover:border-primary hover:bg-primary/5">
+                <div className="flex items-center gap-3 text-primary mb-4">
+                  <Bed className="w-5 h-5" />
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.24em]">Hotels</div>
+                    <div className="text-lg font-semibold">Book trusted stays</div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Compare hotels, resorts and boutique riads with real traveler reviews.</p>
+              </Link>
+              <Link to="/trains" className="group rounded-3xl border border-border p-6 transition hover:border-primary hover:bg-primary/5">
+                <div className="flex items-center gap-3 text-primary mb-4">
+                  <Train className="w-5 h-5" />
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.24em]">Trains</div>
+                    <div className="text-lg font-semibold">Search rail routes</div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Reserve Tunisia train travel across major cities and coastal routes.</p>
+              </Link>
+              <Link to="/holidays" className="group rounded-3xl border border-border p-6 transition hover:border-primary hover:bg-primary/5">
+                <div className="flex items-center gap-3 text-primary mb-4">
+                  <Calendar className="w-5 h-5" />
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.24em]">Holidays</div>
+                    <div className="text-lg font-semibold">Book holiday trips</div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Choose curated holidays for wellness, culture, beach and desert escapes.</p>
+              </Link>
+            </div>
           </div>
 
           {/* Stats */}

@@ -13,6 +13,15 @@ import { Route as PackagesRouteImport } from './routes/packages'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PackagesIdRouteImport } from './routes/packages.$id'
+import { Route as FlightsRouteImport } from './routes/flights'
+import { Route as HotelsRouteImport } from './routes/hotels'
+import { Route as TrainsRouteImport } from './routes/trains'
+import { Route as HolidaysRouteImport } from './routes/holidays'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as CompareRouteImport } from './routes/compare'
 
 const PackagesRoute = PackagesRouteImport.update({
   id: '/packages',
@@ -22,6 +31,51 @@ const PackagesRoute = PackagesRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlightsRoute = FlightsRouteImport.update({
+  id: '/flights',
+  path: '/flights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HotelsRoute = HotelsRouteImport.update({
+  id: '/hotels',
+  path: '/hotels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrainsRoute = TrainsRouteImport.update({
+  id: '/trains',
+  path: '/trains',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HolidaysRoute = HolidaysRouteImport.update({
+  id: '/holidays',
+  path: '/holidays',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -38,12 +92,30 @@ const PackagesIdRoute = PackagesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/flights': typeof FlightsRoute
+  '/hotels': typeof HotelsRoute
+  '/trains': typeof TrainsRoute
+  '/holidays': typeof HolidaysRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/compare': typeof CompareRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/flights': typeof FlightsRoute
+  '/hotels': typeof HotelsRoute
+  '/trains': typeof TrainsRoute
+  '/holidays': typeof HolidaysRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/compare': typeof CompareRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
@@ -51,20 +123,37 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/flights': typeof FlightsRoute
+  '/hotels': typeof HotelsRoute
+  '/trains': typeof TrainsRoute
+  '/holidays': typeof HolidaysRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/compare': typeof CompareRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/packages' | '/packages/$id'
+  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/packages' | '/packages/$id'
-  id: '__root__' | '/' | '/about' | '/packages' | '/packages/$id'
+  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
+  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  FlightsRoute: typeof FlightsRoute
+  HotelsRoute: typeof HotelsRoute
+  TrainsRoute: typeof TrainsRoute
+  HolidaysRoute: typeof HolidaysRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
+  AccountRoute: typeof AccountRoute
+  BookingsRoute: typeof BookingsRoute
   PackagesRoute: typeof PackagesRouteWithChildren
 }
 
@@ -84,6 +173,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flights': {
+      id: '/flights'
+      path: '/flights'
+      fullPath: '/flights'
+      preLoaderRoute: typeof FlightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hotels': {
+      id: '/hotels'
+      path: '/hotels'
+      fullPath: '/hotels'
+      preLoaderRoute: typeof HotelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -97,6 +228,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/packages/$id'
       preLoaderRoute: typeof PackagesIdRouteImport
       parentRoute: typeof PackagesRoute
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -116,6 +254,15 @@ const PackagesRouteWithChildren = PackagesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  FlightsRoute: FlightsRoute,
+  HotelsRoute: HotelsRoute,
+  TrainsRoute: TrainsRoute,
+  HolidaysRoute: HolidaysRoute,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
+  AccountRoute: AccountRoute,
+  BookingsRoute: BookingsRoute,
+  CompareRoute: CompareRoute,
   PackagesRoute: PackagesRouteWithChildren,
 }
 export const routeTree = rootRouteImport

@@ -17,22 +17,33 @@ export function BookingModalProvider({ children }: { children: ReactNode }) {
   const [pkg, setPkg] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
-    name: "", phone: "", email: "", date: "", adults: 2, children: 0, notes: "",
+    name: "", phone: "", email: "", checkIn: "", checkOut: "", adults: 2, children: 0, rooms: 1, notes: "",
   });
 
   const open = (packageName = "Custom Trip") => {
     setPkg(packageName);
     setSubmitted(false);
-    setForm({ name: "", phone: "", email: "", date: "", adults: 2, children: 0, notes: "" });
+    setForm({ name: "", phone: "", email: "", checkIn: "", checkOut: "", adults: 2, children: 0, rooms: 1, notes: "" });
     setIsOpen(true);
   };
 
   const close = () => setIsOpen(false);
 
+  const nights = form.checkIn && form.checkOut
+    ? Math.max(1, Math.round((new Date(form.checkOut).getTime() - new Date(form.checkIn).getTime()) / 86400000))
+    : 0;
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const msg = `Hi Rahi Travels! I want to book ${pkg}.
-Name: ${form.name} | Date: ${form.date} | Travellers: ${form.adults} Adults, ${form.children} Children | Phone: ${form.phone} | Notes: ${form.notes || "—"}`;
+Name: ${form.name}
+Check-in: ${form.checkIn || "—"}
+Check-out: ${form.checkOut || "—"}
+Nights: ${nights || "Automatic"}
+Rooms: ${form.rooms}
+Travellers: ${form.adults} Adults, ${form.children} Children
+Phone: ${form.phone}
+Notes: ${form.notes || "—"}`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
     setSubmitted(true);
   };
@@ -67,10 +78,21 @@ Name: ${form.name} | Date: ${form.date} | Travellers: ${form.adults} Adults, ${f
                   <Field label="Phone" type="tel" required value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
                   <Field label="Email" type="email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
                 </div>
-                <Field label="Travel Date" type="date" required value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
                 <div className="grid grid-cols-2 gap-3">
+                  <Field label="Check-in" type="date" value={form.checkIn} onChange={(v) => setForm({ ...form, checkIn: v })} required />
+                  <Field label="Check-out" type="date" value={form.checkOut} onChange={(v) => setForm({ ...form, checkOut: v })} required />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
                   <Field label="Adults" type="number" value={String(form.adults)} onChange={(v) => setForm({ ...form, adults: Number(v) })} />
                   <Field label="Children" type="number" value={String(form.children)} onChange={(v) => setForm({ ...form, children: Number(v) })} />
+                  <Field label="Rooms" type="number" value={String(form.rooms)} onChange={(v) => setForm({ ...form, rooms: Number(v) })} />
+                </div>
+                <div className="rounded-3xl border border-gray-200 bg-slate-50 p-4 text-sm text-muted-foreground">
+                  <div className="font-semibold mb-2">Booking details</div>
+                  <div>Check-in: {form.checkIn || "—"}</div>
+                  <div>Check-out: {form.checkOut || "—"}</div>
+                  <div>Nights: {nights || "—"}</div>
+                  <div>Rooms: {form.rooms}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Special Requests</label>

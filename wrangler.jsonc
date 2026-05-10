@@ -4,4 +4,8 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "vars": {
+    "AMADEUS_CLIENT_ID": "your_amadeus_client_id",
+    "AMADEUS_CLIENT_SECRET": "your_amadeus_client_secret"
+  }
 }

@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, Star, Clock, Check, X, MessageCircle, ChevronDown } from "lucide-react";
+import { ChevronRight, Star, Clock, Check, X, MessageCircle, ChevronDown, Wallet } from "lucide-react";
 import { getPackage, packages, type Package } from "@/data/packages";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useBookingModal } from "@/components/site/BookingModal";
+import { useApp } from "@/components/site/AppProvider";
 
 export const Route = createFileRoute("/packages/$id")({
   loader: ({ params }) => {
@@ -34,13 +35,40 @@ export const Route = createFileRoute("/packages/$id")({
 function PackageDetail() {
   const { pkg } = Route.useLoaderData() as { pkg: Package };
   const { open } = useBookingModal();
+  const { user, walletBalance, spend, addBooking } = useApp();
   const [activeImg, setActiveImg] = useState(pkg.image);
   const [activeDay, setActiveDay] = useState(1);
   const [tier, setTier] = useState(pkg.tiers[0].name);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
-  const [date, setDate] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [rooms, setRooms] = useState(1);
   const selectedTier = pkg.tiers.find((t) => t.name === tier)!;
+  const canReserveWithWallet = walletBalance >= selectedTier.price;
+  const days = checkIn && checkOut ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)) : pkg.nights;
+  const nights = days > 0 ? days : pkg.nights;
+
+  const handleReserveWithWallet = () => {
+    if (!user) {
+      window.location.assign(`/login?next=/packages/${pkg.id}`);
+      return;
+    }
+
+    if (spend(selectedTier.price, `Reserved ${pkg.name} (${tier})`, pkg.id)) {
+      addBooking({
+        type: "package",
+        title: pkg.name,
+        category: pkg.category,
+        details: `${tier} tier · ${nights} nights · ${adults + children} traveller(s)`,
+        price: selectedTier.price,
+        guests: adults + children,
+      });
+      window.alert(`Reserved ${pkg.name} using wallet credit.`);
+    } else {
+      window.alert("Insufficient wallet balance. Please top up your wallet to reserve this package.");
+    }
+  };
 
   const related = packages.filter((p) => p.id !== pkg.id && p.category === pkg.category).slice(0, 3);
   if (related.length < 3) related.push(...packages.filter((p) => p.id !== pkg.id && !related.includes(p)).slice(0, 3 - related.length));
@@ -141,19 +169,47 @@ function PackageDetail() {
           <div className="card-surface p-6">
             <div className="text-xs text-muted-foreground">Starting from ({tier})</div>
             <div className="text-3xl font-bold mb-1">TND {selectedTier.price.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground mb-5">per person · {pkg.duration}</div>
+            <div className="text-xs text-muted-foreground mb-5">per person · {pkg.nights} nights</div>
 
-            <label className="block text-sm font-medium mb-1.5">Travel Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Check-in</label>
+                <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Check-out</label>
+                <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3 mb-5">
               <Counter label="Adults" value={adults} onChange={setAdults} min={1} />
               <Counter label="Children" value={children} onChange={setChildren} min={0} />
             </div>
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Rooms</label>
+                <input type="number" min={1} value={rooms} onChange={(e) => setRooms(Math.max(1, Number(e.target.value)))}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div className="rounded-3xl border border-gray-200 bg-slate-50 p-4">
+                <div className="text-sm text-muted-foreground">Stay details</div>
+                <div className="mt-2 font-semibold">{nights} nights · {adults + children} travellers</div>
+                <div className="mt-1 text-sm text-muted-foreground">Rooms: {rooms}</div>
+              </div>
+            </div>
 
             <button onClick={() => open(`${pkg.name} (${tier})`)} className="btn-primary w-full justify-center mb-2">
               <MessageCircle className="w-4 h-4" /> Enquire Now
+            </button>
+            <button
+              onClick={handleReserveWithWallet}
+              disabled={!canReserveWithWallet}
+              className={`btn-outline w-full justify-center text-sm ${!canReserveWithWallet ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+              <Wallet className="w-4 h-4" /> Reserve with Wallet
             </button>
             <a href="tel:+21671000000" className="btn-outline w-full justify-center text-sm">Call agent</a>
           </div>

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "postbuild": "node --input-type=module -e \"import { copyFileSync } from 'node:fs'; copyFileSync('dist/index.html','dist/404.html');\"",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -65,7 +66,8 @@
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "amadeus": "^9.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

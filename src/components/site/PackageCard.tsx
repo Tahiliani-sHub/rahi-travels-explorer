@@ -1,10 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { Star, Clock, MapPin } from "lucide-react";
+import { Star, Clock, MapPin, Heart, Shuffle, Wallet } from "lucide-react";
 import type { Package } from "@/data/packages";
 import { useBookingModal } from "./BookingModal";
+import { useApp } from "./AppProvider";
 
 export function PackageCard({ pkg }: { pkg: Package }) {
   const { open } = useBookingModal();
+  const { user, toggleSavedPackage, toggleComparePackage, isSavedPackage, isComparedPackage, walletBalance, spend } = useApp();
+  const saved = isSavedPackage(pkg.id);
+  const compared = isComparedPackage(pkg.id);
+
   return (
     <article className="card-surface flex flex-col">
       <Link to="/packages/$id" params={{ id: pkg.id }} className="block aspect-[4/3] overflow-hidden">
@@ -24,15 +29,60 @@ export function PackageCard({ pkg }: { pkg: Package }) {
             <li key={h} className="flex gap-2"><span className="text-primary">•</span>{h}</li>
           ))}
         </ul>
-        <div className="mt-auto flex items-end justify-between gap-3">
-          <div>
-            <div className="text-xs text-muted-foreground">Starting from</div>
-            <div className="font-bold text-lg text-foreground">TND {pkg.price.toLocaleString()}</div>
+
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+          <button
+            type="button"
+            onClick={() => toggleSavedPackage(pkg.id)}
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 transition ${saved ? "border-primary bg-primary/10 text-primary" : "border-gray-200 bg-white text-muted-foreground"}`}
+          >
+            <Heart className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleComparePackage(pkg.id)}
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 transition ${compared ? "border-primary bg-primary/10 text-primary" : "border-gray-200 bg-white text-muted-foreground"}`}
+          >
+            <Shuffle className="w-3.5 h-3.5" /> {compared ? "Comparing" : "Compare"}
+          </button>
+        </div>
+
+        <div className="mt-auto flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs text-muted-foreground">Starting from</div>
+              <div className="font-bold text-lg text-foreground">TND {pkg.price.toLocaleString()}</div>
+            </div>
+            <div className="flex gap-2">
+              <Link to="/packages/$id" params={{ id: pkg.id }} className="btn-outline text-sm">Details</Link>
+              <button
+                onClick={() => {
+                  if (!user) {
+                    window.location.assign(`/login?next=/packages/${pkg.id}`);
+                    return;
+                  }
+                  open(pkg.name);
+                }}
+                className="btn-primary text-sm"
+              >
+                Book
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Link to="/packages/$id" params={{ id: pkg.id }} className="btn-outline text-sm">Details</Link>
-            <button onClick={() => open(pkg.name)} className="btn-primary text-sm">Book</button>
-          </div>
+          <button
+            type="button"
+            disabled={!user || walletBalance < pkg.price}
+            onClick={() => {
+              if (!user) {
+                window.location.assign(`/login?next=/packages/${pkg.id}`);
+                return;
+              }
+              spend(pkg.price, `Booked ${pkg.name} with wallet`, pkg.id);
+            }}
+            className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${!user || walletBalance < pkg.price ? "bg-gray-200 text-muted-foreground cursor-not-allowed" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
+          >
+            <Wallet className="w-4 h-4" /> Reserve with Wallet
+          </button>
         </div>
       </div>
     </article>
