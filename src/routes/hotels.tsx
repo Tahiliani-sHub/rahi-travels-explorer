@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Heart } from "lucide-react";
+import { Heart, MessageSquare, ChevronDown } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
 import { SearchAutocomplete } from "@/components/site/SearchAutocomplete";
 import { type Hotel } from "@/data/hotels";
 import { PaymentModal } from "@/components/site/PaymentModal";
 import { RatingDisplay } from "@/components/site/ReviewRating";
+import { ReviewForm } from "@/components/site/ReviewForm";
+import { ReviewList } from "@/components/site/ReviewList";
 
 export const Route = createFileRoute("/hotels")({
   head: () => ({
@@ -57,6 +59,7 @@ function HotelsPage() {
   });
   const [rating, setRating] = useState<number | null>(null);
   const [occupancyOpen, setOccupancyOpen] = useState(false);
+  const [expandedReviews, setExpandedReviews] = useState<string | null>(null);
 
   const guests = occupancyRooms.reduce((sum, room) => sum + room.adults + room.children, 0);
   const nights = diffDays(checkIn, checkOut);
@@ -286,7 +289,7 @@ function HotelsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">Price for {nights} night{nights > 1 ? "s" : ""}</div>
-                    <div className="text-3xl font-semibold">TND {hotel.price * nights * rooms}</div>
+                    <div className="text-3xl font-semibold">€{hotel.price * nights * rooms}</div>
                     <button
                       onClick={() => handleBookHotel(hotel)}
                       className="btn-primary mt-4 w-full justify-center"
@@ -311,8 +314,22 @@ function HotelsPage() {
                     >
                       <Heart className="w-3.5 h-3.5" /> {isSavedItem(hotel.id) ? "Saved" : "Save"}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedReviews(expandedReviews === hotel.id ? null : hotel.id)}
+                      className="mt-2 inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs text-muted-foreground hover:border-primary transition w-full justify-center"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Reviews
+                      <ChevronDown className={`w-3 h-3 transition-transform ${expandedReviews === hotel.id ? "rotate-180" : ""}`} />
+                    </button>
                   </div>
                 </div>
+                {expandedReviews === hotel.id && (
+                  <div className="mt-4 border-t border-border pt-4 space-y-4">
+                    <ReviewList itemId={hotel.id} currentUserId={user?.id} />
+                    <ReviewForm itemId={hotel.id} itemType="hotel" userId={user?.id} userName={user?.name} />
+                  </div>
+                )}
               </div>
             ))}
             </div>

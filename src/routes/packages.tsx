@@ -81,7 +81,7 @@ function PackagesPage() {
           </label>
           <div className="rounded-3xl border border-gray-200 bg-slate-50 p-4 text-sm text-foreground">
             <div className="font-semibold">Wallet Credit</div>
-            <div className="mt-2 text-xl font-bold">TND {walletBalance.toLocaleString()}</div>
+            <div className="mt-2 text-xl font-bold">€{walletBalance.toLocaleString()}</div>
             <div className="mt-1 text-muted-foreground">Use wallet credit to reserve instantly.</div>
           </div>
         </div>
@@ -91,7 +91,7 @@ function PackagesPage() {
         {/* Sidebar */}
         <aside className="card-surface p-6 h-fit lg:sticky lg:top-24">
           <div className="mb-6">
-            <h5 className="font-semibold mb-3">Budget (TND)</h5>
+            <h5 className="font-semibold mb-3">Budget (EUR)</h5>
             <input type="range" min={300} max={3000} step={100} value={budget} onChange={(e) => setBudget(Number(e.target.value))}
               className="w-full accent-[var(--brand-primary)]" />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">

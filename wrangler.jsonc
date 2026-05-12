@@ -5,10 +5,13 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "vars": {
-    "DUFFEL_API_KEY": "your_duffel_api_key",
-    "STRIPE_SECRET_KEY": "sk_test_your_stripe_key",
-    "STRIPE_PUBLISHABLE_KEY": "pk_test_your_stripe_key",
-    "RESEND_API_KEY": "re_your_resend_key",
-    "SENDER_EMAIL": "bookings@rahitravels.tn"
+    // For local wrangler dev, copy real values into .dev.vars (gitignored).
+    // For production, set secrets with: wrangler secret put RAZORPAY_KEY_ID
+    "DUFFEL_API_KEY": "",
+    "RAZORPAY_KEY_ID": "",
+    "RAZORPAY_KEY_SECRET": "",
+    "RESEND_API_KEY": "",
+    "SENDER_EMAIL": "bookings@rahitravels.tn",
+    "CURRENCY": "EUR"
   }
 }

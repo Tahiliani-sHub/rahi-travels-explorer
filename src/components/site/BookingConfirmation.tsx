@@ -17,7 +17,7 @@ export function BookingConfirmation({
   customerEmail,
   bookingDetails,
   totalAmount,
-  currency = 'TND',
+  currency = 'EUR',
   bookingDate = new Date().toLocaleDateString()
 }: BookingConfirmationProps) {
   const [copied, setCopied] = useState(false);

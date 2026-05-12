@@ -40,7 +40,7 @@ export function ReviewForm({ itemId, itemType, userId, userName, onReviewSubmitt
 
       const response = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Rahi-Request': 'true' },
         body: JSON.stringify({
           userId,
           itemId,

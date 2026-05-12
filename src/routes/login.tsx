@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
+import { SplashScreen } from "@/components/site/SplashScreen";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -20,6 +21,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [next, setNext] = useState("/account");
 
   useEffect(() => {
@@ -35,12 +37,20 @@ function LoginPage() {
     setError("");
     const success = await login({ email, password });
     if (success) {
-      window.location.assign(next);
+      setShowSplash(true);
     } else {
       setError("Email or password is incorrect. Please try again.");
       setLoading(false);
     }
   };
+
+  const handleSplashDone = useCallback(() => {
+    window.location.assign(next);
+  }, [next]);
+
+  if (showSplash) {
+    return <SplashScreen onDone={handleSplashDone} />;
+  }
 
   if (user) {
     return (

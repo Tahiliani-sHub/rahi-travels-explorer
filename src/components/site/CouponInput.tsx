@@ -30,7 +30,7 @@ export function CouponInput({ amount, onCouponApplied, appliedCoupon, onRemoveCo
 
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Rahi-Request': 'true' },
         body: JSON.stringify({ code: code.toUpperCase(), amount })
       });
 
@@ -60,7 +60,7 @@ export function CouponInput({ amount, onCouponApplied, appliedCoupon, onRemoveCo
               <p className="font-semibold text-sm text-green-900">Coupon Applied</p>
               <p className="text-xs text-green-700">{appliedCoupon.code}</p>
               <p className="text-sm font-bold text-green-900 mt-1">
-                Savings: {appliedCoupon.discount.toFixed(2)} TND
+                Savings: €{appliedCoupon.discount.toFixed(2)}
               </p>
             </div>
           </div>

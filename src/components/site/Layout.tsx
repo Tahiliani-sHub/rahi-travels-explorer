@@ -45,10 +45,10 @@ export function Header() {
             ) : (
               <span>Premium travel services across Tunisia</span>
             )}
-            <span className="hidden sm:inline text-xs text-muted-foreground">Currency: TND</span>
+            <span className="hidden sm:inline text-xs text-muted-foreground">Currency: EUR</span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="tabular-nums">Balance: TND {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="tabular-nums">Balance: €{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <a href="tel:+21671000000" className="text-primary hover:underline font-medium">+216 71 000 000</a>
             <Link to="/account" className="hidden sm:inline text-muted-foreground hover:text-primary transition-colors">My Account</Link>
           </div>
@@ -85,7 +85,7 @@ export function Header() {
               onClick={() => setWalletOpen(true)}
             >
               <Wallet className="w-4 h-4" />
-              TND {walletBalance.toLocaleString()}
+              €{walletBalance.toLocaleString()}
             </button>
             {user ? (
               <>
@@ -152,7 +152,7 @@ export function Header() {
                   onClick={() => { setWalletOpen(true); setMenuOpen(false); }}
                   className="btn-outline justify-center items-center gap-2"
                 >
-                  <Wallet className="w-4 h-4" /> Wallet · TND {walletBalance.toLocaleString()}
+                  <Wallet className="w-4 h-4" /> Wallet · €{walletBalance.toLocaleString()}
                 </button>
                 <a href={waUrl} className="btn-primary justify-center items-center gap-2">
                   <MessageCircle className="w-4 h-4" /> WhatsApp us

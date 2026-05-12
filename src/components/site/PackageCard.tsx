@@ -55,7 +55,7 @@ export function PackageCard({ pkg }: { pkg: Package }) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs text-muted-foreground">Starting from</div>
-              <div className="font-bold text-lg text-foreground">TND {pkg.price.toLocaleString()}</div>
+              <div className="font-bold text-lg text-foreground">€{pkg.price.toLocaleString()}</div>
             </div>
             <div className="flex gap-2">
               <Link to="/packages/$id" params={{ id: pkg.id }} className="btn-outline text-sm">Details</Link>

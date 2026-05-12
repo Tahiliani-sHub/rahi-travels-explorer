@@ -106,8 +106,22 @@ function HolidaysPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-3xl border border-border bg-white p-12 text-center shadow-sm">
-          <p className="text-muted-foreground">Searching holidays...</p>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-3xl border border-border bg-white shadow-sm overflow-hidden">
+              <div className="skeleton h-52 w-full rounded-none" />
+              <div className="p-5 space-y-3">
+                <div className="skeleton h-3 w-20 rounded" />
+                <div className="skeleton h-6 w-48 rounded" />
+                <div className="skeleton h-4 w-full rounded" />
+                <div className="skeleton h-4 w-3/4 rounded" />
+                <div className="flex justify-between items-center pt-2">
+                  <div className="skeleton h-7 w-24 rounded" />
+                  <div className="skeleton h-10 w-28 rounded-2xl" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : results.length === 0 ? (
         <div className="rounded-3xl border border-border bg-white p-12 text-center shadow-sm">
@@ -135,7 +149,7 @@ function HolidaysPage() {
                   <div className="text-2xl font-semibold">{holiday.rating.toFixed(1)}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-semibold">TND {holiday.price * guests}</div>
+                  <div className="text-3xl font-semibold">€{holiday.price * guests}</div>
                   <button
                     onClick={() => handleBook(holiday)}
                     className="btn-primary mt-3 w-full justify-center"

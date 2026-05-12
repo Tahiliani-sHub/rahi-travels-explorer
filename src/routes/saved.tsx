@@ -105,7 +105,7 @@ function SavedPage() {
                   <h3 className="font-semibold mb-1">{item.title}</h3>
                   <p className="text-sm text-muted-foreground mb-3">{item.subtitle}</p>
                   <div className="flex items-center justify-between">
-                    <div className="font-bold text-lg">TND {item.price.toLocaleString()}</div>
+                    <div className="font-bold text-lg">€{item.price.toLocaleString()}</div>
                     <span className="text-xs text-muted-foreground">
                       Saved {new Date(item.savedAt).toLocaleDateString()}
                     </span>

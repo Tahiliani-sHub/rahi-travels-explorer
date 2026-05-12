@@ -56,12 +56,13 @@ export type AppContextValue = {
   login: (credentials: { email: string; password: string }) => Promise<boolean>;
   signup: (details: { name: string; email: string; phone: string; password: string }) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  updateProfile: (data: Partial<User>) => void;
   bookings: BookingItem[];
   bookingsForUser: BookingItem[];
   addBooking: (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status" | "date">) => boolean;
   walletBalance: number;
   transactions: WalletTransaction[];
-  deposit: (amount: number) => void;
+  recordTransaction: (tx: Omit<WalletTransaction, "id" | "date">) => void;
   spend: (amount: number, note: string, pkgId?: string) => Promise<boolean>;
   savedPackageIds: string[];
   comparePackageIds: string[];
@@ -70,15 +71,23 @@ export type AppContextValue = {
   isSavedPackage: (pkgId: string) => boolean;
   isComparedPackage: (pkgId: string) => boolean;
   savedItems: SavedItem[];
-  toggleSavedItem: (item: SavedItem) => void;
+  toggleSavedItem: (item: SavedItem) => void | Promise<void>;
   isSavedItem: (id: string) => boolean;
   appliedCoupon: { code: string; discount: number; finalAmount: number } | null;
   applyCouponCode: (code: string, amount: number) => Promise<boolean>;
   removeCoupon: () => void;
+  refreshBalance: () => Promise<void>;
 };
 
 const STORAGE_KEY = "rahi_travels_app_state";
 const AppContext = createContext<AppContextValue | null>(null);
+
+function getAuthHeader() {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("sessionToken") ?? "" : "";
+  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Rahi-Request": "true" };
+}
+
+const JSON_HEADERS = { "Content-Type": "application/json", "X-Rahi-Request": "true" } as const;
 
 export function useApp() {
   const ctx = useContext(AppContext);
@@ -147,7 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
         body: JSON.stringify({ email, password })
       });
       if (!res.ok) return false;
@@ -157,10 +166,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data.sessionToken) {
           window.localStorage.setItem('sessionToken', data.sessionToken);
         }
-        // Sync wallet balance from DB
+        // Sync wallet balance and saved items from DB
         fetch(`/api/wallet?userId=${data.user.id}`)
           .then(r => r.json())
           .then(w => { if (typeof w.balance === 'number') setWalletBalance(w.balance); })
+          .catch(() => {});
+        fetch('/api/saved-items', { headers: { Authorization: `Bearer ${data.sessionToken}` } })
+          .then(r => r.json())
+          .then((items: any[]) => { if (Array.isArray(items)) setSavedItems(items.map(i => ({ id: i.itemId, type: i.type, title: i.title, subtitle: i.subtitle, price: i.price, savedAt: i.savedAt, meta: i.meta }))); })
           .catch(() => {});
         return true;
       }
@@ -178,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
         body: JSON.stringify({ name, email, phone, password })
       });
       
@@ -198,7 +211,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("sessionToken") ?? "" : "";
+    if (token) {
+      fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}`, "X-Rahi-Request": "true" } }).catch(() => {});
+      window.localStorage.removeItem("sessionToken");
+    }
     setUser(null);
+    setSavedItems([]);
+  };
+
+  const updateProfile = (data: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...data } : prev);
   };
 
   const addBooking = (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status" | "date">) => {
@@ -215,30 +238,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const deposit = async (amount: number) => {
-    if (amount <= 0 || !user) return;
-    try {
-      const res = await fetch('/api/wallet/topup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, amount })
-      });
-      const data = await res.json();
-      if (res.ok && typeof data.balance === 'number') {
-        setWalletBalance(data.balance);
-      }
-    } catch {
-      // fallback to local update
-      setWalletBalance((prev) => prev + amount);
-    }
-    const transaction: WalletTransaction = {
+  const recordTransaction = (tx: Omit<WalletTransaction, "id" | "date">) => {
+    const full: WalletTransaction = {
+      ...tx,
       id: createTransactionId(),
-      type: "deposit",
-      amount,
       date: new Date().toISOString(),
-      note: "Wallet top-up",
     };
-    setTransactions((prev) => [transaction, ...prev]);
+    setTransactions((prev) => [full, ...prev]);
   };
 
   const spend = async (amount: number, note: string, pkgId?: string): Promise<boolean> => {
@@ -246,7 +252,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('/api/wallet/spend', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
         body: JSON.stringify({ userId: user.id, amount })
       });
       const data = await res.json();
@@ -276,17 +282,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setComparePackageIds((prev) => (prev.includes(pkgId) ? prev.filter((id) => id !== pkgId) : [...prev, pkgId]));
   };
 
-  const toggleSavedItem = (item: SavedItem) => {
+  const toggleSavedItem = async (item: SavedItem) => {
+    // Optimistic update first
     setSavedItems((prev) =>
       prev.some((s) => s.id === item.id) ? prev.filter((s) => s.id !== item.id) : [item, ...prev],
     );
+    try {
+      await fetch('/api/saved-items', {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ itemId: item.id, type: item.type, title: item.title, subtitle: item.subtitle, price: item.price, meta: item.meta }),
+      });
+    } catch {
+      // Rollback on failure
+      setSavedItems((prev) =>
+        prev.some((s) => s.id === item.id) ? prev.filter((s) => s.id !== item.id) : [item, ...prev],
+      );
+    }
   };
 
   const applyCouponCode = async (code: string, amount: number) => {
     try {
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
         body: JSON.stringify({ code, amount })
       });
 
@@ -312,6 +331,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAppliedCoupon(null);
   };
 
+  const refreshBalance = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/wallet?userId=${user.id}`);
+      const data = await res.json();
+      if (typeof data.balance === "number") setWalletBalance(data.balance);
+    } catch {}
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -319,12 +347,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       login,
       signup,
       logout,
+      updateProfile,
       bookings,
       bookingsForUser: user ? bookings.filter((booking) => booking.ownerId === user.id) : [],
       addBooking,
       walletBalance,
       transactions,
-      deposit,
+      recordTransaction,
       spend,
       savedPackageIds,
       comparePackageIds,
@@ -338,6 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       appliedCoupon,
       applyCouponCode,
       removeCoupon,
+      refreshBalance,
     }),
     [user, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds, savedItems, appliedCoupon],
   );

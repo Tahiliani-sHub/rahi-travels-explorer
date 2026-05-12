@@ -8,13 +8,14 @@ import { searchTrains } from "./data/trains";
 import { searchHolidays } from "./data/holidays";
 import { packages } from "./data/packages";
 import { validateEnv } from "./lib/env";
-import { hashPassword, verifyPassword, generateSessionToken } from "./lib/auth";
-import { createUser, findUserByEmail, validateUserPassword, createBooking, getUserBookings, createTransaction, getBookingById, updateBookingStatus, cancelBooking, createReview, getReviewsForItem, getUserReviewForItem, getAverageRatingForItem, deleteReview, validateCoupon, applyCoupon, getWalletBalance, topUpWallet, spendFromWallet } from "./lib/db";
+import { generateSessionToken } from "./lib/auth";
+import { createUser, validateUserPassword, createBooking, getUserBookings, getBookingById, cancelBooking, createReview, getReviewsForItem, getAverageRatingForItem, deleteReview, validateCoupon, applyCoupon, createCoupon, listCoupons, getWalletBalance, topUpWallet, spendFromWallet, findUserById, updateUser, updatePassword, createSession, validateSession, deleteSession, getSavedItems, toggleSavedItemDB } from "./lib/db";
 import { generateBookingPDF } from "./lib/pdf";
 import { searchFlightsWithDuffel } from "./lib/duffel";
 import { applySearchFiltersAndSort } from "./lib/search";
 import { Duffel } from '@duffel/api';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 import { Resend } from 'resend';
 
 type ServerEntry = {
@@ -86,15 +87,6 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
-async function forwardToDuffel(request: Request, baseUrl: string) {
-  const url = new URL(request.url);
-  const target = new URL(url.pathname + url.search, baseUrl).toString();
-  return fetch(target, {
-    method: request.method,
-    headers: request.headers,
-    body: request.method === "GET" ? null : request.body,
-  });
-}
 
 async function handleApiRequest(request: Request, env: unknown) {
   const url = new URL(request.url);
@@ -110,6 +102,13 @@ async function handleApiRequest(request: Request, env: unknown) {
     );
   }
 
+  // CSRF: all mutating requests must carry this header (browsers never send it cross-origin without CORS pre-approval)
+  if (request.method !== "GET" && request.method !== "OPTIONS") {
+    if (request.headers.get("X-Rahi-Request") !== "true") {
+      return jsonResponse({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const envAny = envRecord;
   const duffel = new Duffel({
     token: envAny.DUFFEL_API_KEY || ""
@@ -120,6 +119,7 @@ async function handleApiRequest(request: Request, env: unknown) {
     const destination = url.searchParams.get("destination") ?? "";
     const departDate = url.searchParams.get("departDate") ?? "";
     const cabin = url.searchParams.get("cabin") ?? "Any";
+    const passengers = url.searchParams.get("passengers") ? parseInt(url.searchParams.get("passengers")!) : 1;
 
     const minPrice = url.searchParams.get("minPrice") ? parseFloat(url.searchParams.get("minPrice")!) : undefined;
     const maxPrice = url.searchParams.get("maxPrice") ? parseFloat(url.searchParams.get("maxPrice")!) : undefined;
@@ -132,7 +132,8 @@ async function handleApiRequest(request: Request, env: unknown) {
           origin,
           destination,
           departDate,
-          cabin
+          cabin,
+          passengers
         });
 
         if (duffelFlights.length > 0) {
@@ -162,8 +163,6 @@ async function handleApiRequest(request: Request, env: unknown) {
 
   if (url.pathname === "/api/search/hotels") {
     const city = url.searchParams.get("city") ?? "";
-    const checkIn = url.searchParams.get("checkIn") ?? "";
-    const checkOut = url.searchParams.get("checkOut") ?? "";
     const guests = Number(url.searchParams.get("guests") ?? "2");
 
     // Duffel API currently focuses on flights, so hotels use mock data
@@ -186,46 +185,74 @@ async function handleApiRequest(request: Request, env: unknown) {
     return jsonResponse(searchHolidays({ destination, date, guests }));
   }
 
-  if (url.pathname === "/api/payment/create-intent") {
+  if (url.pathname === "/api/payment/create-order") {
     if (request.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, { status: 405 });
     }
-    
+
     try {
-      const { amount, currency = "TND", description, email } = await request.json() as any;
-      
-      const stripeSecret = envAny.STRIPE_SECRET_KEY || "";
-      if (!stripeSecret || stripeSecret === "your_stripe_secret_key") {
-        console.warn('Mocking Stripe payment intent because STRIPE_SECRET_KEY is missing.');
+      const { amount, description } = await request.json() as any;
+
+      const keyId = envAny.RAZORPAY_KEY_ID || "";
+      const keySecret = envAny.RAZORPAY_KEY_SECRET || "";
+
+      if (!keyId || keyId === "rzp_test_your_key_id") {
+        console.warn('Mocking Razorpay order because RAZORPAY_KEY_ID is missing.');
         return jsonResponse({
-          clientSecret: "mock_client_secret_for_development_only_" + Date.now(),
-          paymentIntentId: "pi_mock_" + Date.now(),
+          orderId: "order_mock_" + Date.now(),
+          keyId: "rzp_test_mock",
           amount: Math.round(amount * 100),
-          currency: currency.toLowerCase()
+          currency: "INR"
         });
       }
 
-      const stripe = new Stripe(stripeSecret);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: currency.toLowerCase(),
-        description,
-        receipt_email: email,
-        metadata: {
-          booking_date: new Date().toISOString(),
-          customer_email: email
-        }
+      const currency = envAny.CURRENCY || "EUR";
+      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const order = await razorpay.orders.create({
+        amount: Math.round(amount * 100),
+        currency,
+        notes: { description, booking_date: new Date().toISOString() }
       });
 
       return jsonResponse({
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency
+        orderId: order.id,
+        keyId,
+        amount: order.amount,
+        currency: order.currency
       });
+    } catch (error: any) {
+      const detail = error?.error?.description || error?.message || String(error);
+      console.error('Razorpay order creation error:', detail);
+      return jsonResponse({ error: `Failed to create payment order: ${detail}` }, { status: 500 });
+    }
+  }
+
+  if (url.pathname === "/api/payment/verify") {
+    if (request.method !== "POST") {
+      return jsonResponse({ error: "Method not allowed" }, { status: 405 });
+    }
+
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await request.json() as any;
+      const keySecret = envAny.RAZORPAY_KEY_SECRET || "";
+
+      if (!keySecret || keySecret === "your_razorpay_key_secret") {
+        return jsonResponse({ success: true, paymentId: razorpay_payment_id || "mock_pay_" + Date.now() });
+      }
+
+      const expected = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+      if (expected !== razorpay_signature) {
+        return jsonResponse({ error: "Invalid payment signature" }, { status: 400 });
+      }
+
+      return jsonResponse({ success: true, paymentId: razorpay_payment_id });
     } catch (error) {
-      console.error('Payment intent creation error:', error);
-      return jsonResponse({ error: 'Failed to create payment intent' }, { status: 500 });
+      console.error('Razorpay verify error:', error);
+      return jsonResponse({ error: 'Payment verification failed' }, { status: 500 });
     }
   }
 
@@ -241,7 +268,7 @@ async function handleApiRequest(request: Request, env: unknown) {
         bookingId, 
         bookingDetails, 
         totalAmount,
-        currency = "TND"
+        currency = "EUR"
       } = await request.json() as any;
 
       const resendApiKey = envAny.RESEND_API_KEY || "";
@@ -324,7 +351,7 @@ async function handleApiRequest(request: Request, env: unknown) {
     }
 
     try {
-      const { email, password, name } = await request.json() as any;
+      const { email, password, name, phone = "" } = await request.json() as any;
 
       if (!email || !password || !name) {
         return jsonResponse(
@@ -347,7 +374,7 @@ async function handleApiRequest(request: Request, env: unknown) {
         );
       }
 
-      const result = await createUser(email, password, name);
+      const result = await createUser(email, password, name, phone);
       if (!result.success) {
         return jsonResponse(
           { error: result.error || 'Signup failed' },
@@ -356,6 +383,7 @@ async function handleApiRequest(request: Request, env: unknown) {
       }
 
       const sessionToken = generateSessionToken();
+      await createSession(result.user!.id, sessionToken);
 
       return jsonResponse({
         success: true,
@@ -392,6 +420,7 @@ async function handleApiRequest(request: Request, env: unknown) {
       }
 
       const sessionToken = generateSessionToken();
+      await createSession(user.id, sessionToken);
 
       return jsonResponse({
         success: true,
@@ -404,6 +433,52 @@ async function handleApiRequest(request: Request, env: unknown) {
     }
   }
 
+  if (url.pathname === "/api/auth/logout") {
+    if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+    await deleteSession(token);
+    return jsonResponse({ success: true });
+  }
+
+  if (url.pathname === "/api/auth/profile") {
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+    const sessionUserId = await validateSession(token);
+    if (!sessionUserId) return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+
+    if (request.method === "GET") {
+      const user = await findUserById(sessionUserId);
+      if (!user) return jsonResponse({ error: "User not found" }, { status: 404 });
+      return jsonResponse(user);
+    }
+
+    if (request.method === "PUT") {
+      try {
+        const { name, phone } = await request.json() as any;
+        const updated = await updateUser(sessionUserId, { name, phone });
+        return jsonResponse({ success: true, user: { id: updated.id, name: updated.name, phone: updated.phone, email: updated.email } });
+      } catch (error) {
+        return jsonResponse({ error: "Failed to update profile" }, { status: 500 });
+      }
+    }
+
+    return jsonResponse({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  if (url.pathname === "/api/auth/change-password") {
+    if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+    const sessionUserId = await validateSession(token);
+    if (!sessionUserId) return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+    try {
+      const { password } = await request.json() as any;
+      if (!password || password.length < 8) return jsonResponse({ error: "Password must be at least 8 characters" }, { status: 400 });
+      await updatePassword(sessionUserId, password);
+      return jsonResponse({ success: true });
+    } catch (error) {
+      return jsonResponse({ error: "Failed to change password" }, { status: 500 });
+    }
+  }
+
   if (url.pathname === "/api/wallet") {
     if (request.method === "GET") {
       const userId = url.searchParams.get("userId");
@@ -413,14 +488,27 @@ async function handleApiRequest(request: Request, env: unknown) {
     }
   }
 
-  if (url.pathname === "/api/wallet/topup") {
+  if (url.pathname === "/api/wallet/topup-verify") {
     if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
     try {
-      const { userId, amount } = await request.json() as any;
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, amount } = await request.json() as any;
       if (!userId || !amount || amount <= 0) return jsonResponse({ error: "Invalid request" }, { status: 400 });
+
+      const keySecret = envAny.RAZORPAY_KEY_SECRET || "";
+      if (keySecret && keySecret !== "your_razorpay_key_secret") {
+        const expected = crypto
+          .createHmac("sha256", keySecret)
+          .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+          .digest("hex");
+        if (expected !== razorpay_signature) {
+          return jsonResponse({ error: "Invalid payment signature" }, { status: 400 });
+        }
+      }
+
       const balance = await topUpWallet(userId, amount);
       return jsonResponse({ success: true, balance });
     } catch (error) {
+      console.error("Wallet topup-verify error:", error);
       return jsonResponse({ error: "Top-up failed" }, { status: 500 });
     }
   }
@@ -459,7 +547,7 @@ async function handleApiRequest(request: Request, env: unknown) {
 
     if (request.method === "POST") {
       try {
-        const { userId, bookingId, type, details, totalAmount, currency = 'TND', departDate } = await request.json() as any;
+        const { userId, bookingId, type, details, totalAmount, currency = 'EUR', departDate } = await request.json() as any;
 
         if (!userId || !bookingId || !type || !details || totalAmount === undefined) {
           return jsonResponse(
@@ -548,6 +636,32 @@ async function handleApiRequest(request: Request, env: unknown) {
 
       const cancelled = await cancelBooking(bookingId);
 
+      // Card payment: attempt Razorpay refund
+      if (bookingId.startsWith("pay_")) {
+        const keyId = envAny.RAZORPAY_KEY_ID || "";
+        const keySecret = envAny.RAZORPAY_KEY_SECRET || "";
+        if (keyId && keySecret && keyId !== "rzp_test_your_key_id") {
+          try {
+            const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+            await (razorpay.payments as any).refund(bookingId, {
+              amount: Math.round(booking.totalAmount * 100),
+              notes: { reason: "Customer cancellation" }
+            });
+          } catch (refundErr) {
+            console.error("Razorpay refund failed:", refundErr);
+          }
+        }
+      }
+
+      // Wallet payment: credit amount back to wallet
+      if (bookingId.startsWith("wallet_")) {
+        try {
+          await topUpWallet(booking.userId, booking.totalAmount);
+        } catch (refundErr) {
+          console.error("Wallet refund failed:", refundErr);
+        }
+      }
+
       return jsonResponse({
         success: true,
         booking: cancelled,
@@ -610,10 +724,11 @@ async function handleApiRequest(request: Request, env: unknown) {
         );
       }
 
+      const customer = await findUserById(booking.userId);
       const pdfBuffer = await generateBookingPDF({
         bookingId: booking.bookingId,
-        customerName: 'Customer',
-        customerEmail: 'customer@example.com',
+        customerName: customer?.name ?? 'Customer',
+        customerEmail: customer?.email ?? 'customer@example.com',
         bookingDetails: booking.details,
         totalAmount: booking.totalAmount,
         currency: booking.currency,
@@ -635,6 +750,43 @@ async function handleApiRequest(request: Request, env: unknown) {
 
   if (url.pathname === "/api/packages") {
     return jsonResponse(packages);
+  }
+
+  // Coupon admin endpoints
+  if (url.pathname === "/api/admin/coupons") {
+    if (request.method === "GET") {
+      try {
+        const coupons = await listCoupons();
+        return jsonResponse(coupons);
+      } catch {
+        return jsonResponse({ error: "Failed to list coupons" }, { status: 500 });
+      }
+    }
+
+    if (request.method === "POST") {
+      try {
+        const { code, discountType, discountValue, maxUses = -1, validFrom, validTo } = await request.json() as any;
+        if (!code || !discountType || discountValue === undefined || !validFrom || !validTo) {
+          return jsonResponse({ error: "Missing required fields: code, discountType, discountValue, validFrom, validTo" }, { status: 400 });
+        }
+        if (!["percentage", "fixed"].includes(discountType)) {
+          return jsonResponse({ error: "discountType must be 'percentage' or 'fixed'" }, { status: 400 });
+        }
+        const coupon = await createCoupon(
+          code,
+          discountType as "percentage" | "fixed",
+          Number(discountValue),
+          Number(maxUses),
+          new Date(validFrom),
+          new Date(validTo)
+        );
+        return jsonResponse({ success: true, coupon });
+      } catch (error: any) {
+        if (error?.code === "P2002") return jsonResponse({ error: "Coupon code already exists" }, { status: 400 });
+        console.error("Coupon create error:", error);
+        return jsonResponse({ error: "Failed to create coupon" }, { status: 500 });
+      }
+    }
   }
 
   // Coupon endpoints
@@ -759,6 +911,25 @@ async function handleApiRequest(request: Request, env: unknown) {
         console.error('Review deletion error:', error);
         return jsonResponse({ error: 'Failed to delete review' }, { status: 500 });
       }
+    }
+  }
+
+  // Saved items
+  if (url.pathname === "/api/saved-items") {
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+    const sessionUserId = await validateSession(token);
+    if (!sessionUserId) return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+
+    if (request.method === "GET") {
+      const items = await getSavedItems(sessionUserId);
+      return jsonResponse(items);
+    }
+
+    if (request.method === "POST") {
+      const { itemId, type, title, subtitle, price, meta } = await request.json() as any;
+      if (!itemId || !type || !title) return jsonResponse({ error: "Missing fields" }, { status: 400 });
+      const result = await toggleSavedItemDB(sessionUserId, { itemId, type, title, subtitle: subtitle ?? "", price: price ?? 0, meta: meta ?? {} });
+      return jsonResponse(result);
     }
   }
 

@@ -1,19 +1,20 @@
 import { PrismaClient } from "../generated/prisma/client.js";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword, verifyPassword } from "./auth";
 
 let prisma: PrismaClient | undefined;
 
 function getPrismaClient() {
   if (!prisma) {
-    const url = process.env.DATABASE_URL ?? "file:./dev.db";
-    const adapter = new PrismaBetterSqlite3({ url });
-    prisma = new PrismaClient({ adapter });
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    prisma = new PrismaClient({ adapter } as any);
   }
   return prisma;
 }
 
-export async function createUser(email: string, password: string, name: string) {
+export async function createUser(email: string, password: string, name: string, phone = "") {
   const db = getPrismaClient();
   const hashedPassword = await hashPassword(password);
 
@@ -23,6 +24,7 @@ export async function createUser(email: string, password: string, name: string) 
         email: email.toLowerCase(),
         password: hashedPassword,
         name,
+        phone,
         wallet: {
           create: { balance: 0 }
         }
@@ -31,6 +33,7 @@ export async function createUser(email: string, password: string, name: string) 
         id: true,
         email: true,
         name: true,
+        phone: true,
         createdAt: true
       }
     });
@@ -62,8 +65,51 @@ export async function validateUserPassword(email: string, password: string) {
   return {
     id: user.id,
     email: user.email,
-    name: user.name
+    name: user.name,
+    phone: user.phone ?? ""
   };
+}
+
+export async function findUserById(id: string) {
+  const db = getPrismaClient();
+  return db.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, name: true, phone: true }
+  });
+}
+
+export async function updateUser(id: string, data: { name?: string; phone?: string }) {
+  const db = getPrismaClient();
+  return db.user.update({ where: { id }, data });
+}
+
+export async function updatePassword(id: string, newPassword: string) {
+  const db = getPrismaClient();
+  const hashed = await hashPassword(newPassword);
+  return db.user.update({ where: { id }, data: { password: hashed } });
+}
+
+export async function createSession(userId: string, token: string) {
+  const db = getPrismaClient();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  return db.session.create({ data: { userId, token, expiresAt } });
+}
+
+export async function validateSession(token: string): Promise<string | null> {
+  if (!token) return null;
+  const db = getPrismaClient();
+  const session = await db.session.findUnique({ where: { token } });
+  if (!session) return null;
+  if (session.expiresAt < new Date()) {
+    await db.session.delete({ where: { token } }).catch(() => {});
+    return null;
+  }
+  return session.userId;
+}
+
+export async function deleteSession(token: string) {
+  const db = getPrismaClient();
+  return db.session.delete({ where: { token } }).catch(() => {});
 }
 
 export async function createBooking(
@@ -72,7 +118,7 @@ export async function createBooking(
   type: string,
   details: any,
   totalAmount: number,
-  currency: string = 'TND',
+  currency: string = 'EUR',
   departDate?: string
 ) {
   const db = getPrismaClient();
@@ -291,6 +337,11 @@ export async function applyCoupon(couponCode: string) {
   return coupon;
 }
 
+export async function listCoupons() {
+  const db = getPrismaClient();
+  return db.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+}
+
 export async function createCoupon(
   code: string,
   discountType: 'percentage' | 'fixed',
@@ -341,6 +392,23 @@ export async function spendFromWallet(userId: string, amount: number): Promise<{
     data: { balance: { decrement: amount } }
   });
   return { success: true, balance: updated.balance };
+}
+
+export async function getSavedItems(userId: string) {
+  const db = getPrismaClient();
+  const items = await db.savedItem.findMany({ where: { userId }, orderBy: { savedAt: 'desc' } });
+  return items.map(i => ({ ...i, meta: JSON.parse(i.meta), savedAt: i.savedAt.toISOString() }));
+}
+
+export async function toggleSavedItemDB(userId: string, item: { itemId: string; type: string; title: string; subtitle: string; price: number; meta: Record<string, unknown> }) {
+  const db = getPrismaClient();
+  const existing = await db.savedItem.findUnique({ where: { userId_itemId: { userId, itemId: item.itemId } } });
+  if (existing) {
+    await db.savedItem.delete({ where: { userId_itemId: { userId, itemId: item.itemId } } });
+    return { saved: false };
+  }
+  await db.savedItem.create({ data: { userId, itemId: item.itemId, type: item.type, title: item.title, subtitle: item.subtitle, price: item.price, meta: JSON.stringify(item.meta) } });
+  return { saved: true };
 }
 
 export async function closePrisma() {

@@ -51,7 +51,8 @@ export function ReviewList({ itemId, currentUserId, onReviewDeleted }: ReviewLis
 
     try {
       const response = await fetch(`/api/reviews/${reviewId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'X-Rahi-Request': 'true' }
       });
       if (!response.ok) throw new Error('Failed to delete review');
       

@@ -120,7 +120,7 @@ function PackageDetail() {
               <button key={t.name} onClick={() => setTier(t.name)}
                 className={`text-left rounded-xl border-2 p-5 transition ${tier === t.name ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{t.name}</div>
-                <div className="text-2xl font-bold mt-1">TND {t.price.toLocaleString()}</div>
+                <div className="text-2xl font-bold mt-1">€{t.price.toLocaleString()}</div>
                 <ul className="text-sm text-muted-foreground mt-3 space-y-1">
                   {t.perks.map((p) => <li key={p} className="flex gap-2"><Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />{p}</li>)}
                 </ul>
@@ -173,7 +173,7 @@ function PackageDetail() {
         <aside className="lg:sticky lg:top-24 h-fit">
           <div className="card-surface p-6">
             <div className="text-xs text-muted-foreground">Starting from ({tier})</div>
-            <div className="text-3xl font-bold mb-1">TND {selectedTier.price.toLocaleString()}</div>
+            <div className="text-3xl font-bold mb-1">€{selectedTier.price.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground mb-5">per person · {pkg.nights} nights</div>
 
             <div className="grid grid-cols-2 gap-3 mb-5">

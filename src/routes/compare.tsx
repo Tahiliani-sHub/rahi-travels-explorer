@@ -48,7 +48,7 @@ function ComparePage() {
                         <div className="text-sm text-muted-foreground">{pkg.duration} · {pkg.rating} ★</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-semibold">TND {pkg.price.toLocaleString()}</div>
+                        <div className="text-lg font-semibold">€{pkg.price.toLocaleString()}</div>
                         <div className="text-xs text-muted-foreground">starting price</div>
                       </div>
                     </div>
@@ -106,7 +106,7 @@ function ComparePage() {
                 <h3 className="font-semibold mb-3">{pkg.name}</h3>
                 <div className="text-sm text-muted-foreground mb-3">{pkg.category}</div>
                 <div className="space-y-2 text-sm text-muted-foreground">
-                  <div><span className="font-semibold text-foreground">Price:</span> TND {pkg.price.toLocaleString()}</div>
+                  <div><span className="font-semibold text-foreground">Price:</span> €{pkg.price.toLocaleString()}</div>
                   <div><span className="font-semibold text-foreground">Duration:</span> {pkg.duration}</div>
                   <div><span className="font-semibold text-foreground">Nights:</span> {pkg.nights}</div>
                   <div><span className="font-semibold text-foreground">Rating:</span> {pkg.rating}</div>

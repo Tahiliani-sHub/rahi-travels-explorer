@@ -23,6 +23,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 
 const PackagesRoute = PackagesRouteImport.update({
   id: '/packages',
@@ -84,6 +85,11 @@ const SavedRoute = SavedRouteImport.update({
   path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCouponsRoute = AdminCouponsRouteImport.update({
+  id: '/admin/coupons',
+  path: '/admin/coupons',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
+  '/admin/coupons': typeof AdminCouponsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
+  '/admin/coupons': typeof AdminCouponsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,13 +151,14 @@ export interface FileRoutesById {
   '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
+  '/admin/coupons': typeof AdminCouponsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
+  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
-  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
+  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
+  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,6 +174,7 @@ export interface RootRouteChildren {
   BookingsRoute: typeof BookingsRoute
   SavedRoute: typeof SavedRoute
   PackagesRoute: typeof PackagesRouteWithChildren
+  AdminCouponsRoute: typeof AdminCouponsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/coupons': {
+      id: '/admin/coupons'
+      path: '/admin/coupons'
+      fullPath: '/admin/coupons'
+      preLoaderRoute: typeof AdminCouponsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -296,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompareRoute: CompareRoute,
   SavedRoute: SavedRoute,
   PackagesRoute: PackagesRouteWithChildren,
+  AdminCouponsRoute: AdminCouponsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

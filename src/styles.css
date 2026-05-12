@@ -152,6 +152,12 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+@keyframes splashBar {
+  0%   { width: 0%; }
+  30%  { width: 45%; }
+  70%  { width: 75%; }
+  100% { width: 100%; }
+}
 
 .animate-fade-in-up  { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-fade-in     { animation: fadeIn  0.5s ease both; }

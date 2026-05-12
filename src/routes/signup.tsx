@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
+import { SplashScreen } from "@/components/site/SplashScreen";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -22,6 +23,7 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [next, setNext] = useState("/account");
 
   useEffect(() => {
@@ -37,12 +39,20 @@ function SignupPage() {
     setError("");
     const result = await signup({ name, email, phone, password });
     if (result.success) {
-      window.location.assign(next);
+      setShowSplash(true);
     } else {
       setError(result.message || "An error occurred during signup.");
       setLoading(false);
     }
   };
+
+  const handleSplashDone = useCallback(() => {
+    window.location.assign(next);
+  }, [next]);
+
+  if (showSplash) {
+    return <SplashScreen onDone={handleSplashDone} />;
+  }
 
   if (user) {
     return (

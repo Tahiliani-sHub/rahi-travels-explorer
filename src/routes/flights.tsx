@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Heart } from "lucide-react";
+import { Heart, MessageSquare, ChevronDown } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
 import { type Flight } from "@/data/flights";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchAutocomplete } from "@/components/site/SearchAutocomplete";
 import { PaymentModal } from "@/components/site/PaymentModal";
+import { ReviewForm } from "@/components/site/ReviewForm";
+import { ReviewList } from "@/components/site/ReviewList";
 
 export const Route = createFileRoute("/flights")({
   head: () => ({
@@ -23,13 +25,18 @@ const cabins = ["Any", "Economy", "Premium Economy", "Business", "First"] as con
 
 function FlightsPage() {
   const { user, addBooking, toggleSavedItem, isSavedItem } = useApp();
+  const [tripType, setTripType] = useState<"one-way" | "return">("one-way");
   const [origin, setOrigin] = useState("TUN");
   const [destination, setDestination] = useState("DJE");
   const [departDate, setDepartDate] = useState("2026-06-08");
+  const [returnDate, setReturnDate] = useState("2026-06-15");
   const [cabin, setCabin] = useState("Any");
   const [passengers, setPassengers] = useState(1);
   const [bookedFlightId, setBookedFlightId] = useState<string | null>(null);
   const [paymentFlight, setPaymentFlight] = useState<Flight | null>(null);
+  const [selectedOutbound, setSelectedOutbound] = useState<Flight | null>(null);
+  const [returnFlight, setReturnFlight] = useState<Flight | null>(null);
+  const [expandedReviews, setExpandedReviews] = useState<string | null>(null);
 
   // Filter states
   const [priceRange, setPriceRange] = useState([0, 1000]);
@@ -39,14 +46,25 @@ function FlightsPage() {
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'stops'>('price');
 
   const { data: results = [], isLoading } = useQuery<Flight[]>({
-    queryKey: ['flights', origin, destination, departDate, cabin],
+    queryKey: ['flights', origin, destination, departDate, cabin, passengers],
     queryFn: async () => {
-      const params = new URLSearchParams({ origin, destination, departDate, cabin });
+      const params = new URLSearchParams({ origin, destination, departDate, cabin, passengers: String(passengers) });
       const res = await fetch(`/api/search/flights?${params}`);
       if (!res.ok) throw new Error('Failed to fetch flights');
       return res.json();
     },
     enabled: !!origin && !!destination,
+  });
+
+  const { data: returnResults = [], isLoading: isLoadingReturn } = useQuery<Flight[]>({
+    queryKey: ['flights-return', destination, origin, returnDate, cabin, passengers],
+    queryFn: async () => {
+      const params = new URLSearchParams({ origin: destination, destination: origin, departDate: returnDate, cabin, passengers: String(passengers) });
+      const res = await fetch(`/api/search/flights?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch return flights');
+      return res.json();
+    },
+    enabled: tripType === "return" && !!origin && !!destination && !!returnDate,
   });
 
   // Get unique airlines and price range from results
@@ -92,26 +110,54 @@ function FlightsPage() {
     }
   }, [results, priceRange, selectedStops, selectedAirlines, durationRange, sortBy]);
 
-  const handleBook = (flight: Flight) => {
-    if (!user) {
-      window.location.assign("/login?next=/flights");
+  const handleBook = (flight: Flight, isReturn = false) => {
+    if (!user) { window.location.assign("/login?next=/flights"); return; }
+    if (tripType === "return") {
+      if (!isReturn) {
+        // Select outbound leg — don't open payment yet
+        setSelectedOutbound(prev => prev?.id === flight.id ? null : flight);
+        setReturnFlight(null);
+        return;
+      }
+      // Return leg — bundle with selected outbound
+      if (!selectedOutbound) { alert("Please select an outbound flight first."); return; }
+      setReturnFlight(flight);
+      setPaymentFlight(selectedOutbound); // triggers modal; amount computed below
       return;
     }
     setPaymentFlight(flight);
   };
 
+  const bundledAmount = paymentFlight && returnFlight
+    ? (paymentFlight.price + returnFlight.price) * passengers
+    : paymentFlight ? paymentFlight.price * passengers : 0;
+
   const handlePaymentComplete = () => {
     if (!paymentFlight) return;
-    addBooking({
-      type: "flight",
-      title: `${paymentFlight.airline} ${paymentFlight.flightNumber}`,
-      category: `${paymentFlight.origin} → ${paymentFlight.destination}`,
-      details: `${paymentFlight.departDate} • ${paymentFlight.departTime} → ${paymentFlight.arriveTime} • ${paymentFlight.cabin}`,
-      price: paymentFlight.price * passengers,
-      guests: passengers,
-    });
-    setBookedFlightId(paymentFlight.id);
+    if (returnFlight) {
+      addBooking({
+        type: "flight",
+        title: `${paymentFlight.airline} ${paymentFlight.flightNumber} + ${returnFlight.airline} ${returnFlight.flightNumber}`,
+        category: `${paymentFlight.origin} → ${paymentFlight.destination} (Return)`,
+        details: `Out: ${paymentFlight.departDate} ${paymentFlight.departTime}–${paymentFlight.arriveTime} | Ret: ${returnFlight.departDate} ${returnFlight.departTime}–${returnFlight.arriveTime}`,
+        price: bundledAmount,
+        guests: passengers,
+      });
+      setBookedFlightId(returnFlight.id);
+    } else {
+      addBooking({
+        type: "flight",
+        title: `${paymentFlight.airline} ${paymentFlight.flightNumber}`,
+        category: `${paymentFlight.origin} → ${paymentFlight.destination}`,
+        details: `${paymentFlight.departDate} • ${paymentFlight.departTime} → ${paymentFlight.arriveTime} • ${paymentFlight.cabin}`,
+        price: paymentFlight.price * passengers,
+        guests: passengers,
+      });
+      setBookedFlightId(paymentFlight.id);
+    }
     setPaymentFlight(null);
+    setReturnFlight(null);
+    setSelectedOutbound(null);
   };
 
   const toggleStops = (stops: number) => {
@@ -139,7 +185,19 @@ function FlightsPage() {
       </div>
 
       <div className="rounded-3xl border border-border bg-white p-6 shadow-sm mb-10">
-        <div className="grid gap-4 md:grid-cols-[1.25fr_1.25fr_1fr_1fr_1fr]">
+        <div className="flex gap-2 mb-4">
+          {(["one-way", "return"] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTripType(t)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${tripType === t ? "bg-primary text-white" : "bg-slate-100 text-muted-foreground hover:bg-slate-200"}`}
+            >
+              {t === "one-way" ? "One-way" : "Return"}
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-[1.25fr_1.25fr_1fr_1fr_1fr_1fr]">
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">From</span>
             <div className="mt-2">
@@ -169,6 +227,16 @@ function FlightsPage() {
               value={departDate}
               onChange={(event) => setDepartDate(event.target.value)}
               className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-muted-foreground">Return {tripType === "one-way" && <span className="text-xs opacity-50">(one-way)</span>}</span>
+            <input
+              type="date"
+              value={returnDate}
+              onChange={(event) => setReturnDate(event.target.value)}
+              disabled={tripType === "one-way"}
+              className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-40 disabled:bg-slate-50"
             />
           </label>
           <label className="block">
@@ -224,7 +292,7 @@ function FlightsPage() {
 
             {/* Price Filter */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Price (TND)</label>
+              <label className="block text-sm font-medium mb-2">Price (EUR)</label>
               <Slider
                 value={priceRange}
                 onValueChange={setPriceRange}
@@ -345,12 +413,12 @@ function FlightsPage() {
                       <div className="text-sm text-muted-foreground">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop(s)`}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-3xl font-semibold">TND {flight.price * passengers}</div>
+                      <div className="text-3xl font-semibold">€{flight.price * passengers}</div>
                       <button
                         onClick={() => handleBook(flight)}
-                        className="btn-primary mt-3 w-full justify-center"
+                        className={`mt-3 w-full justify-center btn-primary ${tripType === "return" && selectedOutbound?.id === flight.id ? "!bg-green-600" : ""}`}
                       >
-                        {bookedFlightId === flight.id ? "Booked ✓" : "Book flight"}
+                        {bookedFlightId === flight.id ? "Booked ✓" : tripType === "return" ? (selectedOutbound?.id === flight.id ? "Selected ✓" : "Select outbound") : "Book flight"}
                       </button>
                     </div>
                   </div>
@@ -360,25 +428,41 @@ function FlightsPage() {
                       <div>{flight.baggage} baggage</div>
                       <div>{flight.refundable ? "Refundable" : "Non-refundable"}</div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!user) { window.location.assign("/login?next=/flights"); return; }
-                        toggleSavedItem({
-                          id: flight.id,
-                          type: "flight",
-                          title: `${flight.airline} ${flight.flightNumber}`,
-                          subtitle: `${flight.origin} → ${flight.destination} · ${flight.departDate}`,
-                          price: flight.price * passengers,
-                          savedAt: new Date().toISOString(),
-                          meta: { ...flight, passengers } as Record<string, unknown>
-                        });
-                      }}
-                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${isSavedItem(flight.id) ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-muted-foreground hover:border-primary"}`}
-                    >
-                      <Heart className="w-3.5 h-3.5" /> {isSavedItem(flight.id) ? "Saved" : "Save"}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedReviews(expandedReviews === flight.id ? null : flight.id)}
+                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs text-muted-foreground hover:border-primary transition"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Reviews
+                        <ChevronDown className={`w-3 h-3 transition-transform ${expandedReviews === flight.id ? "rotate-180" : ""}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) { window.location.assign("/login?next=/flights"); return; }
+                          toggleSavedItem({
+                            id: flight.id,
+                            type: "flight",
+                            title: `${flight.airline} ${flight.flightNumber}`,
+                            subtitle: `${flight.origin} → ${flight.destination} · ${flight.departDate}`,
+                            price: flight.price * passengers,
+                            savedAt: new Date().toISOString(),
+                            meta: { ...flight, passengers } as Record<string, unknown>
+                          });
+                        }}
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${isSavedItem(flight.id) ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-muted-foreground hover:border-primary"}`}
+                      >
+                        <Heart className="w-3.5 h-3.5" /> {isSavedItem(flight.id) ? "Saved" : "Save"}
+                      </button>
+                    </div>
                   </div>
+                  {expandedReviews === flight.id && (
+                    <div className="mt-4 border-t border-border pt-4 space-y-4">
+                      <ReviewList itemId={flight.id} currentUserId={user?.id} />
+                      <ReviewForm itemId={flight.id} itemType="flight" userId={user?.id} userName={user?.name} />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -392,13 +476,69 @@ function FlightsPage() {
         </div>
       )}
 
+      {tripType === "return" && (returnResults.length > 0 || isLoadingReturn) && (
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4">Return flights — {destination} → {origin} · {returnDate}</h2>
+          {isLoadingReturn ? (
+            <div className="space-y-4">
+              {[0, 1].map(i => (
+                <div key={i} className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+                  <div className="skeleton h-16 w-full rounded-2xl" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {returnResults.slice(0, 5).map((flight) => (
+                <div key={flight.id} className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+                  <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr_0.9fr] items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{flight.airline}</p>
+                      <h2 className="text-xl font-semibold">{flight.origin} → {flight.destination}</h2>
+                      <div className="text-sm text-muted-foreground">{flight.flightNumber} · {flight.departDate}</div>
+                    </div>
+                    <div><div className="font-semibold">{flight.departTime}</div><div className="text-sm text-muted-foreground">Depart</div></div>
+                    <div><div className="font-semibold">{flight.arriveTime}</div><div className="text-sm text-muted-foreground">Arrive</div></div>
+                    <div><div className="font-semibold">{flight.duration}</div><div className="text-sm text-muted-foreground">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop(s)`}</div></div>
+                    <div className="text-right">
+                      <div className="text-3xl font-semibold">€{flight.price * passengers}</div>
+                      {selectedOutbound && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Bundle total: €{(selectedOutbound.price + flight.price) * passengers}
+                        </div>
+                      )}
+                      <button onClick={() => handleBook(flight, true)} className="btn-primary mt-3 w-full justify-center" disabled={!selectedOutbound}>
+                        {bookedFlightId === flight.id ? "Booked ✓" : selectedOutbound ? "Book return bundle" : "Select outbound first"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {paymentFlight && (
         <PaymentModal
           open={!!paymentFlight}
-          onClose={() => setPaymentFlight(null)}
-          amount={paymentFlight.price * passengers}
+          onClose={() => { setPaymentFlight(null); setReturnFlight(null); }}
+          amount={bundledAmount}
           bookingType="flight"
-          bookingDetails={{
+          bookingDetails={returnFlight ? {
+            airline: `${paymentFlight.airline} + ${returnFlight.airline}`,
+            flightNumber: `${paymentFlight.flightNumber} / ${returnFlight.flightNumber}`,
+            origin: paymentFlight.origin,
+            destination: paymentFlight.destination,
+            departDate: paymentFlight.departDate,
+            departTime: paymentFlight.departTime,
+            arriveTime: paymentFlight.arriveTime,
+            returnDate: returnFlight.departDate,
+            returnDepartTime: returnFlight.departTime,
+            returnArriveTime: returnFlight.arriveTime,
+            cabin: paymentFlight.cabin,
+            passengers,
+          } : {
             airline: paymentFlight.airline,
             flightNumber: paymentFlight.flightNumber,
             origin: paymentFlight.origin,

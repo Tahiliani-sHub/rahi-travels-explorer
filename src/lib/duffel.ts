@@ -5,6 +5,7 @@ export type FlightSearchParams = {
   destination: string;
   departDate: string;
   cabin?: string;
+  passengers?: number;
 };
 
 export type FlightResult = {
@@ -29,7 +30,7 @@ export async function searchFlightsWithDuffel(
   duffel: Duffel,
   params: FlightSearchParams
 ): Promise<FlightResult[]> {
-  const { origin, destination, departDate, cabin = 'Any' } = params;
+  const { origin, destination, departDate, cabin = 'Any', passengers = 1 } = params;
 
   if (!origin || !destination || !departDate) {
     throw new Error('Missing required parameters: origin, destination, departDate');
@@ -44,11 +45,7 @@ export async function searchFlightsWithDuffel(
           departure_date: departDate
         }
       ],
-      passengers: [
-        {
-          type: 'adult' as const
-        }
-      ],
+      passengers: Array.from({ length: Math.max(1, passengers) }, () => ({ type: 'adult' as const })),
       cabin_class: cabin === 'Any' ? undefined : (cabin.toLowerCase() as any)
     });
 
