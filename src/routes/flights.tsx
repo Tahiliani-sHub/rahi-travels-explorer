@@ -197,12 +197,24 @@ function FlightsPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-3xl border border-border bg-white p-12 text-center shadow-sm">
-          <p className="text-muted-foreground">Searching flights...</p>
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+              <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr_0.9fr] items-center">
+                <div className="space-y-2"><div className="skeleton h-4 w-24" /><div className="skeleton h-6 w-40" /><div className="skeleton h-3 w-32" /></div>
+                <div className="space-y-2"><div className="skeleton h-5 w-16" /><div className="skeleton h-3 w-12" /></div>
+                <div className="space-y-2"><div className="skeleton h-5 w-16" /><div className="skeleton h-3 w-12" /></div>
+                <div className="space-y-2"><div className="skeleton h-5 w-20" /><div className="skeleton h-3 w-16" /></div>
+                <div className="flex flex-col items-end gap-2"><div className="skeleton h-8 w-24" /><div className="skeleton h-10 w-full rounded-xl" /></div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : results.length === 0 ? (
-        <div className="rounded-3xl border border-border bg-white p-12 text-center shadow-sm">
-          <p className="text-muted-foreground">No flights match your search yet. Try a different destination or date.</p>
+        <div className="rounded-3xl border border-border bg-white p-16 text-center shadow-sm">
+          <div className="text-5xl mb-4">✈️</div>
+          <h3 className="font-semibold mb-2">No flights found</h3>
+          <p className="text-muted-foreground text-sm">Try a different destination, date, or cabin class.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">

@@ -11,6 +11,7 @@ import { Header, Footer } from "@/components/site/Layout";
 import { BookingModalProvider } from "@/components/site/BookingModal";
 import { AppProvider } from "@/components/site/AppProvider";
 import { StripeProvider } from "@/components/providers/StripeProvider";
+import { useReveal } from "@/hooks/useReveal";
 
 function NotFoundComponent() {
   return (
@@ -104,6 +105,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useReveal();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -111,7 +113,7 @@ function RootComponent() {
         <AppProvider>
           <BookingModalProvider>
             <Header />
-            <main className="pt-28 min-h-screen">
+            <main className="min-h-screen">
               <Outlet />
             </main>
             <Footer />

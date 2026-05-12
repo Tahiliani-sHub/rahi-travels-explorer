@@ -236,7 +236,23 @@ function HotelsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-10">Loading hotels...</div>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+                  <div className="grid gap-4 lg:grid-cols-[220px_1fr_0.85fr_0.9fr] items-start">
+                    <div className="skeleton aspect-[4/3] rounded-2xl" />
+                    <div className="space-y-3 pt-1">
+                      <div className="flex gap-2"><div className="skeleton h-5 w-20 rounded-full" /><div className="skeleton h-5 w-16 rounded-full" /></div>
+                      <div className="skeleton h-6 w-48" />
+                      <div className="skeleton h-4 w-32" />
+                      <div className="flex gap-2 flex-wrap mt-3">{Array.from({length:4}).map((_,j)=><div key={j} className="skeleton h-5 w-16 rounded-full" />)}</div>
+                    </div>
+                    <div className="space-y-2"><div className="skeleton h-5 w-20" /><div className="skeleton h-4 w-24" /></div>
+                    <div className="space-y-3 text-right"><div className="skeleton h-4 w-28 ml-auto" /><div className="skeleton h-8 w-20 ml-auto" /><div className="skeleton h-10 w-full rounded-xl" /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="space-y-5">
               {results.map((hotel) => (
