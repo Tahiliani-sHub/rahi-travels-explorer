@@ -7,7 +7,7 @@ import { WalletDrawer } from "./WalletDrawer";
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
-  const { user, logout, walletBalance, savedPackageIds, comparePackageIds } = useApp();
+  const { user, logout, walletBalance, savedPackageIds, comparePackageIds, savedItems } = useApp();
   const waUrl = `https://wa.me/21671000000?text=${encodeURIComponent("Hi Rahi Travels! I'd like to plan a trip.")}`;
 
   return (
@@ -44,6 +44,7 @@ export function Header() {
             <Link to="/holidays" className="nav-link" activeProps={{ style: { color: "var(--brand-primary)" } }}>Holidays</Link>
             <Link to="/packages" className="nav-link" activeProps={{ style: { color: "var(--brand-primary)" } }}>Packages</Link>
             <Link to="/compare" className="nav-link">Compare</Link>
+            <Link to="/saved" className="nav-link">Saved</Link>
             <Link to="/bookings" className="nav-link">Bookings</Link>
             <Link to="/about" className="nav-link">About</Link>
           </nav>
@@ -80,6 +81,7 @@ export function Header() {
               <Link to="/holidays" className="nav-link" onClick={() => setMenuOpen(false)}>Holidays</Link>
               <Link to="/packages" className="nav-link" onClick={() => setMenuOpen(false)}>Packages</Link>
               <Link to="/compare" className="nav-link" onClick={() => setMenuOpen(false)}>Compare</Link>
+              <Link to="/saved" className="nav-link" onClick={() => setMenuOpen(false)}>Saved</Link>
               <Link to="/bookings" className="nav-link" onClick={() => setMenuOpen(false)}>Bookings</Link>
               <Link to="/about" className="nav-link" onClick={() => setMenuOpen(false)}>About</Link>
               {user ? (
@@ -103,8 +105,18 @@ export function Header() {
             <Sparkles className="w-4 h-4" /> Trusted marketplace features with secure bookings.
           </div>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <span className="rounded-full bg-slate-100 px-3 py-1">Saved {savedPackageIds.length}</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">Compare {comparePackageIds.length}</span>
+            <Link
+              to="/saved"
+              className="rounded-full bg-slate-100 px-3 py-1 hover:bg-primary/10 hover:text-primary transition"
+            >
+              Saved {savedPackageIds.length + savedItems.length}
+            </Link>
+            <Link
+              to="/compare"
+              className="rounded-full bg-slate-100 px-3 py-1 hover:bg-primary/10 hover:text-primary transition"
+            >
+              Compare {comparePackageIds.length}
+            </Link>
           </div>
         </div>
       </div>

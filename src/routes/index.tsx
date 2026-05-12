@@ -3,6 +3,7 @@ import { Search, Calendar, Users, Star, Award, Globe, Heart, Shield, Sparkles, P
 import { packages } from "@/data/packages";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useBookingModal } from "@/components/site/BookingModal";
+import { ExplodedView } from "@/components/site/ExplodedView";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -120,40 +121,7 @@ const heroPreviewImages = [
         </div>
       </section>
 
-      <section className="bg-secondary/40 py-16">
-        <div className="mx-auto max-w-7xl px-5 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
-          <div>
-            <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">Premium travel media</span>
-            <h2 className="mb-5">Feel the destination before you arrive.</h2>
-            <p className="text-lg text-muted-foreground max-w-xl">
-              A cinematic preview, premium destination imagery and curated travel inspiration combine to make your first impression feel luxurious.
-            </p>
-          </div>
-          <div className="grid gap-5">
-            <div className="card-surface relative overflow-hidden rounded-[2rem] shadow-[0_24px_64px_rgba(40,40,40,0.08)]">
-              <video
-                src={heroVideoUrl}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover aspect-[16/9]"
-              />
-              <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
-                <div className="text-xs uppercase tracking-[0.24em] opacity-80 mb-2">Short film</div>
-                <div className="text-xl font-semibold">Tunisia in motion</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {heroPreviewImages.map((src, index) => (
-                <div key={index} className="aspect-square overflow-hidden rounded-3xl bg-white shadow-[inset_-6px_-6px_16px_rgba(255,255,255,0.85),inset_6px_6px_16px_rgba(0,0,0,0.08)]">
-                  <img src={src} alt={`Travel preview ${index + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <ExplodedView />
 
       <Section title="Discover Tunisia" subtitle="Domestic favourites curated by our Tunis-based team.">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

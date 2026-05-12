@@ -1,14 +1,15 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Star, Clock, MapPin, Heart, Shuffle, Wallet } from "lucide-react";
 import type { Package } from "@/data/packages";
-import { useBookingModal } from "./BookingModal";
 import { useApp } from "./AppProvider";
+import { PaymentModal } from "./PaymentModal";
 
 export function PackageCard({ pkg }: { pkg: Package }) {
-  const { open } = useBookingModal();
-  const { user, toggleSavedPackage, toggleComparePackage, isSavedPackage, isComparedPackage, walletBalance, spend } = useApp();
+  const { user, toggleSavedPackage, toggleComparePackage, isSavedPackage, isComparedPackage, walletBalance, spend, addBooking } = useApp();
   const saved = isSavedPackage(pkg.id);
   const compared = isComparedPackage(pkg.id);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   return (
     <article className="card-surface flex flex-col">
@@ -33,7 +34,10 @@ export function PackageCard({ pkg }: { pkg: Package }) {
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
           <button
             type="button"
-            onClick={() => toggleSavedPackage(pkg.id)}
+            onClick={() => {
+              if (!user) { window.location.assign(`/login?next=/packages/${pkg.id}`); return; }
+              toggleSavedPackage(pkg.id);
+            }}
             className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 transition ${saved ? "border-primary bg-primary/10 text-primary" : "border-gray-200 bg-white text-muted-foreground"}`}
           >
             <Heart className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save"}
@@ -61,7 +65,7 @@ export function PackageCard({ pkg }: { pkg: Package }) {
                     window.location.assign(`/login?next=/packages/${pkg.id}`);
                     return;
                   }
-                  open(pkg.name);
+                  setPaymentOpen(true);
                 }}
                 className="btn-primary text-sm"
               >
@@ -72,12 +76,12 @@ export function PackageCard({ pkg }: { pkg: Package }) {
           <button
             type="button"
             disabled={!user || walletBalance < pkg.price}
-            onClick={() => {
+            onClick={async () => {
               if (!user) {
                 window.location.assign(`/login?next=/packages/${pkg.id}`);
                 return;
               }
-              spend(pkg.price, `Booked ${pkg.name} with wallet`, pkg.id);
+              await spend(pkg.price, `Booked ${pkg.name} with wallet`, pkg.id);
             }}
             className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${!user || walletBalance < pkg.price ? "bg-gray-200 text-muted-foreground cursor-not-allowed" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
           >
@@ -85,6 +89,18 @@ export function PackageCard({ pkg }: { pkg: Package }) {
           </button>
         </div>
       </div>
+
+      <PaymentModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        amount={pkg.price}
+        bookingType="package"
+        bookingDetails={{ packageId: pkg.id, name: pkg.name, category: pkg.category, duration: pkg.duration }}
+        onComplete={() => {
+          addBooking({ type: "package", title: pkg.name, category: pkg.category, details: pkg.duration, price: pkg.price, guests: 1 });
+          setPaymentOpen(false);
+        }}
+      />
     </article>
   );
 }

@@ -22,6 +22,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as SavedRouteImport } from './routes/saved'
 
 const PackagesRoute = PackagesRouteImport.update({
   id: '/packages',
@@ -78,6 +79,11 @@ const CompareRoute = CompareRouteImport.update({
   path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SavedRoute = SavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/compare': typeof CompareRoute
+  '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/compare': typeof CompareRoute
+  '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
@@ -132,15 +140,16 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/compare': typeof CompareRoute
+  '/saved': typeof SavedRoute
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
+  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
-  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/packages' | '/packages/$id'
+  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
+  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,6 +163,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   AccountRoute: typeof AccountRoute
   BookingsRoute: typeof BookingsRoute
+  SavedRoute: typeof SavedRoute
   PackagesRoute: typeof PackagesRouteWithChildren
 }
 
@@ -185,6 +195,20 @@ declare module '@tanstack/react-router' {
       path: '/hotels'
       fullPath: '/hotels'
       preLoaderRoute: typeof HotelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trains': {
+      id: '/trains'
+      path: '/trains'
+      fullPath: '/trains'
+      preLoaderRoute: typeof TrainsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/holidays': {
+      id: '/holidays'
+      path: '/holidays'
+      fullPath: '/holidays'
+      preLoaderRoute: typeof HolidaysRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -236,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/saved': {
+      id: '/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -263,6 +294,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   BookingsRoute: BookingsRoute,
   CompareRoute: CompareRoute,
+  SavedRoute: SavedRoute,
   PackagesRoute: PackagesRouteWithChildren,
 }
 export const routeTree = rootRouteImport

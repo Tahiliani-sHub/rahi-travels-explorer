@@ -1,10 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, Star, Clock, Check, X, MessageCircle, ChevronDown, Wallet } from "lucide-react";
+import { ChevronRight, Star, Clock, Check, X, MessageCircle, ChevronDown, Wallet, CreditCard } from "lucide-react";
 import { getPackage, packages, type Package } from "@/data/packages";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useBookingModal } from "@/components/site/BookingModal";
 import { useApp } from "@/components/site/AppProvider";
+import { ReviewForm } from "@/components/site/ReviewForm";
+import { ReviewList } from "@/components/site/ReviewList";
+import { RatingDisplay } from "@/components/site/ReviewRating";
+import { PaymentModal } from "@/components/site/PaymentModal";
 
 export const Route = createFileRoute("/packages/$id")({
   loader: ({ params }) => {
@@ -44,18 +48,19 @@ function PackageDetail() {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [rooms, setRooms] = useState(1);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const selectedTier = pkg.tiers.find((t) => t.name === tier)!;
   const canReserveWithWallet = walletBalance >= selectedTier.price;
   const days = checkIn && checkOut ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)) : pkg.nights;
   const nights = days > 0 ? days : pkg.nights;
 
-  const handleReserveWithWallet = () => {
+  const handleReserveWithWallet = async () => {
     if (!user) {
       window.location.assign(`/login?next=/packages/${pkg.id}`);
       return;
     }
 
-    if (spend(selectedTier.price, `Reserved ${pkg.name} (${tier})`, pkg.id)) {
+    if (await spend(selectedTier.price, `Reserved ${pkg.name} (${tier})`, pkg.id)) {
       addBooking({
         type: "package",
         title: pkg.name,
@@ -201,8 +206,17 @@ function PackageDetail() {
               </div>
             </div>
 
-            <button onClick={() => open(`${pkg.name} (${tier})`)} className="btn-primary w-full justify-center mb-2">
-              <MessageCircle className="w-4 h-4" /> Enquire Now
+            <button
+              onClick={() => {
+                if (!user) { window.location.assign(`/login?next=/packages/${pkg.id}`); return; }
+                setPaymentOpen(true);
+              }}
+              className="btn-primary w-full justify-center mb-2"
+            >
+              <CreditCard className="w-4 h-4" /> Pay by Card
+            </button>
+            <button onClick={() => open(`${pkg.name} (${tier})`)} className="btn-outline w-full justify-center mb-2 text-sm">
+              <MessageCircle className="w-4 h-4" /> Enquire via WhatsApp
             </button>
             <button
               onClick={handleReserveWithWallet}
@@ -221,6 +235,58 @@ function PackageDetail() {
         <h3 className="mb-6">You might also like</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {related.map((p) => <PackageCard key={p.id} pkg={p} />)}
+        </div>
+      </div>
+
+      <PaymentModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        amount={selectedTier.price}
+        bookingType="package"
+        bookingDetails={{
+          packageId: pkg.id,
+          name: pkg.name,
+          tier,
+          nights,
+          adults,
+          children,
+          checkIn,
+          checkOut,
+          rooms,
+        }}
+        onComplete={() => {
+          addBooking({
+            type: "package",
+            title: pkg.name,
+            category: pkg.category,
+            details: `${tier} tier · ${nights} nights · ${adults + children} traveller(s)`,
+            price: selectedTier.price,
+            guests: adults + children,
+          });
+          setPaymentOpen(false);
+        }}
+      />
+
+      {/* Reviews Section */}
+      <div className="mt-20">
+        <div className="flex items-center gap-3 mb-8">
+          <h2 className="text-2xl font-bold">Guest Reviews</h2>
+          <RatingDisplay itemId={pkg.id} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <ReviewList itemId={pkg.id} currentUserId={user?.id} />
+          </div>
+          <div>
+            <ReviewForm 
+              itemId={pkg.id} 
+              itemType="package"
+              userId={user?.id}
+              userName={user?.name}
+              onReviewSubmitted={() => window.location.reload()}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -5,7 +5,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "vars": {
-    "AMADEUS_CLIENT_ID": "your_amadeus_client_id",
-    "AMADEUS_CLIENT_SECRET": "your_amadeus_client_secret"
+    "DUFFEL_API_KEY": "your_duffel_api_key",
+    "STRIPE_SECRET_KEY": "sk_test_your_stripe_key",
+    "STRIPE_PUBLISHABLE_KEY": "pk_test_your_stripe_key",
+    "RESEND_API_KEY": "re_your_resend_key",
+    "SENDER_EMAIL": "bookings@rahitravels.tn"
   }
 }

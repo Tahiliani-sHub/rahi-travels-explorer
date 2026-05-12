@@ -1,8 +1,12 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Heart } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
+import { SearchAutocomplete } from "@/components/site/SearchAutocomplete";
 import { type Hotel } from "@/data/hotels";
+import { PaymentModal } from "@/components/site/PaymentModal";
+import { RatingDisplay } from "@/components/site/ReviewRating";
 
 export const Route = createFileRoute("/hotels")({
   head: () => ({
@@ -22,10 +26,10 @@ type OccupancyRoom = {
 function formatGuests(rooms: OccupancyRoom[]) {
   const adults = rooms.reduce((sum, room) => sum + room.adults, 0);
   const children = rooms.reduce((sum, room) => sum + room.children, 0);
-  const roomLabel = `${rooms.length} chambre${rooms.length > 1 ? "s" : ""}`;
-  const adultLabel = `${adults} adulte${adults > 1 ? "s" : ""}`;
-  const childLabel = `${children} enfant${children > 1 ? "s" : ""}`;
-  return `${roomLabel}: ${adultLabel} et ${childLabel}`;
+  const roomLabel = `${rooms.length} room${rooms.length > 1 ? "s" : ""}`;
+  const adultLabel = `${adults} adult${adults > 1 ? "s" : ""}`;
+  const childLabel = `${children} child${children > 1 ? "ren" : ""}`;
+  return `${roomLabel}: ${adultLabel}, ${childLabel}`;
 }
 
 function diffDays(checkIn: string, checkOut: string) {
@@ -37,12 +41,13 @@ function diffDays(checkIn: string, checkOut: string) {
 }
 
 function HotelsPage() {
-  const { user, addBooking } = useApp();
+  const { user, addBooking, toggleSavedItem, isSavedItem } = useApp();
   const [city, setCity] = useState("Hammamet");
   const [checkIn, setCheckIn] = useState("2026-06-01");
   const [checkOut, setCheckOut] = useState("2026-06-06");
   const [occupancyRooms, setOccupancyRooms] = useState<OccupancyRoom[]>([{ adults: 2, children: 0 }]);
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
+  const [paymentHotel, setPaymentHotel] = useState<Hotel | null>(null);
   const [filters, setFilters] = useState({
     recommended: false,
     promotion: false,
@@ -57,7 +62,7 @@ function HotelsPage() {
   const nights = diffDays(checkIn, checkOut);
   const rooms = occupancyRooms.length;
 
-  const { data: allResults = [], isLoading } = useQuery({
+  const { data: allResults = [], isLoading } = useQuery<Hotel[]>({
     queryKey: ['hotels', city, checkIn, checkOut, guests],
     queryFn: async () => {
       const params = new URLSearchParams({ city, checkIn, checkOut, guests: guests.toString() });
@@ -85,16 +90,21 @@ function HotelsPage() {
       window.location.assign("/login?next=/hotels");
       return;
     }
+    setPaymentHotel(hotel);
+  };
 
+  const handlePaymentComplete = () => {
+    if (!paymentHotel) return;
     addBooking({
       type: "hotel",
-      title: hotel.name,
-      category: hotel.city,
-      details: `${hotel.location} • ${rooms} chambre${rooms > 1 ? "s" : ""} · ${guests} voyageur${guests > 1 ? "s" : ""}`,
-      price: hotel.price * nights * rooms,
+      title: paymentHotel.name,
+      category: paymentHotel.city,
+      details: `${paymentHotel.location} • ${rooms} room${rooms > 1 ? "s" : ""} · ${guests} guest${guests > 1 ? "s" : ""}`,
+      price: paymentHotel.price * nights * rooms,
       guests,
     });
-    setSelectedHotelId(hotel.id);
+    setSelectedHotelId(paymentHotel.id);
+    setPaymentHotel(null);
   };
 
   const toggleFilter = (key: keyof typeof filters) => {
@@ -114,10 +124,10 @@ function HotelsPage() {
       <div className="mb-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold">Recherche d'hôtels</h1>
-            <p className="text-muted-foreground mt-2">Réservez des séjours avec nuits, chambres et filtres comme sur TunisiaBeds.</p>
+            <h1 className="text-3xl font-semibold">Search hotels</h1>
+            <p className="text-muted-foreground mt-2">Compare hotels and book with flexible room options, filters, and real guest ratings.</p>
           </div>
-          <Link to="/packages" className="btn-outline">Voir les packages</Link>
+          <Link to="/packages" className="btn-outline">View packages</Link>
         </div>
       </div>
 
@@ -125,15 +135,17 @@ function HotelsPage() {
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_0.9fr] items-end">
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">Destination</span>
-            <input
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              placeholder="Hammamet"
-              className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
+            <div className="mt-2">
+              <SearchAutocomplete
+                value={city}
+                onChange={setCity}
+                placeholder="Hammamet"
+                type="hotel"
+              />
+            </div>
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-muted-foreground">Arrivée</span>
+            <span className="text-sm font-medium text-muted-foreground">Check-in</span>
             <input
               type="date"
               value={checkIn}
@@ -142,7 +154,7 @@ function HotelsPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-muted-foreground">Départ</span>
+            <span className="text-sm font-medium text-muted-foreground">Check-out</span>
             <input
               type="date"
               value={checkOut}
@@ -155,11 +167,11 @@ function HotelsPage() {
             onClick={() => setOccupancyOpen(true)}
             className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-left text-sm text-foreground hover:border-primary hover:bg-primary/5"
           >
-            <div className="text-muted-foreground text-xs">Chambres</div>
+            <div className="text-muted-foreground text-xs">Rooms & guests</div>
             <div className="font-semibold">{formatGuests(occupancyRooms)}</div>
           </button>
           <div className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
-            <div className="text-muted-foreground">Nuits</div>
+            <div className="text-muted-foreground">Nights</div>
             <div className="mt-1 text-lg font-semibold">{nights}</div>
           </div>
         </div>
@@ -168,17 +180,17 @@ function HotelsPage() {
       <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
         <aside className="space-y-6">
           <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Filtres</h2>
+            <h2 className="text-lg font-semibold mb-4">Filters</h2>
             <div className="space-y-4 text-sm text-muted-foreground">
               <div>
-                <div className="text-sm font-semibold mb-2">Sélection rapide</div>
+                <div className="text-sm font-semibold mb-2">Quick filters</div>
                 <div className="space-y-2">
                   {[
-                    { key: "recommended", label: "Hôtel recommandé" },
-                    { key: "promotion", label: "Tarif promo" },
-                    { key: "childFriendly", label: "Enfant gratuit" },
-                    { key: "availableOnly", label: "Disponibilité" },
-                    { key: "refundable", label: "Annulation gratuite" },
+                    { key: "recommended", label: "Recommended" },
+                    { key: "promotion", label: "On promotion" },
+                    { key: "childFriendly", label: "Child-friendly" },
+                    { key: "availableOnly", label: "Available only" },
+                    { key: "refundable", label: "Free cancellation" },
                   ].map((option) => (
                     <label key={option.key} className="flex items-center gap-2">
                       <input
@@ -193,7 +205,7 @@ function HotelsPage() {
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold mb-2">Étoiles</div>
+                <div className="text-sm font-semibold mb-2">Star rating</div>
                 <div className="space-y-2">
                   {[5, 4, 3].map((stars) => (
                     <label key={stars} className="flex items-center gap-2">
@@ -209,7 +221,7 @@ function HotelsPage() {
                   ))}
                 </div>
                 <button type="button" onClick={() => setRating(null)} className="mt-3 text-primary text-sm hover:underline">
-                  Réinitialiser
+                  Reset
                 </button>
               </div>
             </div>
@@ -219,7 +231,7 @@ function HotelsPage() {
         <section>
           <div className="mb-6 rounded-3xl border border-border bg-white p-6 shadow-sm">
             <p className="text-sm text-muted-foreground">
-              {isLoading ? 'Searching hotels...' : `${results.length} hôtels disponibles trouvés à ${city} du ${checkIn} au ${checkOut} pour ${rooms} chambre${rooms > 1 ? "s" : ""}: ${formatGuests(occupancyRooms)}`}
+              {isLoading ? 'Searching hotels...' : `${results.length} hotel${results.length !== 1 ? "s" : ""} found in ${city} · ${checkIn} to ${checkOut} · ${formatGuests(occupancyRooms)}`}
             </p>
           </div>
 
@@ -236,8 +248,8 @@ function HotelsPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{hotel.boardType}</span>
-                      {hotel.promotion && <span className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">Promo</span>}
-                      {hotel.refundable && <span className="rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs">Annulation gratuite</span>}
+                      {hotel.promotion && <span className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">On sale</span>}
+                      {hotel.refundable && <span className="rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs">Free cancellation</span>}
                     </div>
                     <h2 className="text-xl font-semibold">{hotel.name}</h2>
                     <div className="text-sm text-muted-foreground mt-2">{hotel.location}, {hotel.city}</div>
@@ -248,19 +260,40 @@ function HotelsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Note</div>
+                    <div className="text-sm text-muted-foreground">Rating</div>
                     <div className="text-2xl font-semibold">{hotel.rating.toFixed(1)}</div>
-                    <div className="text-sm text-muted-foreground">{hotel.stars} étoiles</div>
-                    <div className="mt-3 text-sm text-muted-foreground">{hotel.roomsAvailable} chambres disponibles</div>
+                    <div className="text-sm text-muted-foreground">{hotel.stars} stars</div>
+                    <div className="mt-2">
+                      <RatingDisplay itemId={hotel.id} />
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">{hotel.roomsAvailable} rooms available</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Prix pour {nights} nuit{nights > 1 ? "s" : ""}</div>
+                    <div className="text-sm text-muted-foreground">Price for {nights} night{nights > 1 ? "s" : ""}</div>
                     <div className="text-3xl font-semibold">TND {hotel.price * nights * rooms}</div>
                     <button
                       onClick={() => handleBookHotel(hotel)}
                       className="btn-primary mt-4 w-full justify-center"
                     >
-                      {selectedHotelId === hotel.id ? "Réservé" : "Tarifs & Chambres"}
+                      {selectedHotelId === hotel.id ? "Booked ✓" : "Select room"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!user) { window.location.assign("/login?next=/hotels"); return; }
+                        toggleSavedItem({
+                          id: hotel.id,
+                          type: "hotel",
+                          title: hotel.name,
+                          subtitle: `${hotel.city} · ${hotel.stars} stars`,
+                          price: hotel.price * nights * rooms,
+                          savedAt: new Date().toISOString(),
+                          meta: { ...hotel, nights, rooms } as Record<string, unknown>
+                        });
+                      }}
+                      className={`mt-2 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition w-full justify-center ${isSavedItem(hotel.id) ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-muted-foreground hover:border-primary"}`}
+                    >
+                      <Heart className="w-3.5 h-3.5" /> {isSavedItem(hotel.id) ? "Saved" : "Save"}
                     </button>
                   </div>
                 </div>
@@ -271,32 +304,52 @@ function HotelsPage() {
         </section>
       </div>
 
+      {paymentHotel && (
+        <PaymentModal
+          open={!!paymentHotel}
+          onClose={() => setPaymentHotel(null)}
+          amount={paymentHotel.price * nights * rooms}
+          bookingType="hotel"
+          bookingDetails={{
+            hotel: paymentHotel.name,
+            city: paymentHotel.city,
+            checkIn,
+            checkOut,
+            nights,
+            rooms,
+            guests,
+            boardType: paymentHotel.boardType,
+          }}
+          onComplete={handlePaymentComplete}
+        />
+      )}
+
       {occupancyOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4 py-6">
           <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold">Chambres et occupations</h2>
-                <p className="text-sm text-muted-foreground">Ajoutez des chambres ou mettez à jour le nombre d'adultes et d'enfants.</p>
+                <h2 className="text-xl font-semibold">Rooms & guests</h2>
+                <p className="text-sm text-muted-foreground">Add rooms or update the number of adults and children.</p>
               </div>
-              <button onClick={() => setOccupancyOpen(false)} className="text-slate-500 hover:text-slate-900">Fermer</button>
+              <button onClick={() => setOccupancyOpen(false)} className="text-slate-500 hover:text-slate-900">Close</button>
             </div>
             <div className="space-y-6">
               {occupancyRooms.map((room, index) => (
                 <div key={index} className="rounded-2xl border border-border p-5">
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <div className="font-semibold">Chambre {index + 1}</div>
+                    <div className="font-semibold">Room {index + 1}</div>
                     {occupancyRooms.length > 1 && (
                       <button
                         type="button"
                         onClick={() => setOccupancyRooms((prev) => prev.filter((_, idx) => idx !== index))}
                         className="text-sm text-destructive hover:underline"
-                      >Supprimer</button>
+                      >Remove</button>
                     )}
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="block">
-                      <span className="text-sm font-medium text-muted-foreground">Adultes</span>
+                      <span className="text-sm font-medium text-muted-foreground">Adults</span>
                       <select
                         value={room.adults}
                         onChange={(event) => updateRoom(index, { adults: Number(event.target.value) })}
@@ -308,7 +361,7 @@ function HotelsPage() {
                       </select>
                     </label>
                     <label className="block">
-                      <span className="text-sm font-medium text-muted-foreground">Enfants</span>
+                      <span className="text-sm font-medium text-muted-foreground">Children</span>
                       <select
                         value={room.children}
                         onChange={(event) => updateRoom(index, { children: Number(event.target.value) })}
@@ -323,8 +376,8 @@ function HotelsPage() {
                 </div>
               ))}
               <div className="flex flex-wrap items-center gap-3">
-                <button type="button" onClick={addRoom} className="btn-outline">+ Ajouter une chambre</button>
-                <button type="button" onClick={() => setOccupancyOpen(false)} className="btn-primary">Demander</button>
+                <button type="button" onClick={addRoom} className="btn-outline">+ Add room</button>
+                <button type="button" onClick={() => setOccupancyOpen(false)} className="btn-primary">Confirm</button>
               </div>
             </div>
           </div>

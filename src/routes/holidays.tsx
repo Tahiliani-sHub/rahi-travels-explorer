@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Heart } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
+import { SearchAutocomplete } from "@/components/site/SearchAutocomplete";
 import { type Holiday } from "@/data/holidays";
+import { PaymentModal } from "@/components/site/PaymentModal";
 
 export const Route = createFileRoute("/holidays")({
   head: () => ({
@@ -15,13 +18,14 @@ export const Route = createFileRoute("/holidays")({
 });
 
 function HolidaysPage() {
-  const { user, addBooking } = useApp();
+  const { user, addBooking, toggleSavedItem, isSavedItem } = useApp();
   const [destination, setDestination] = useState("Hammamet");
   const [date, setDate] = useState("2026-06-15");
   const [guests, setGuests] = useState(2);
   const [selectedHolidayId, setSelectedHolidayId] = useState<string | null>(null);
+  const [paymentHoliday, setPaymentHoliday] = useState<Holiday | null>(null);
 
-  const { data: results = [], isLoading } = useQuery({
+  const { data: results = [], isLoading } = useQuery<Holiday[]>({
     queryKey: ['holidays', destination, date, guests],
     queryFn: async () => {
       const params = new URLSearchParams({ destination, date, guests: guests.toString() });
@@ -37,16 +41,21 @@ function HolidaysPage() {
       window.location.assign("/login?next=/holidays");
       return;
     }
+    setPaymentHoliday(holiday);
+  };
 
+  const handlePaymentComplete = () => {
+    if (!paymentHoliday) return;
     addBooking({
       type: "holiday",
-      title: holiday.name,
-      category: holiday.category,
-      details: `${holiday.destination} · ${holiday.nights} nights · ${guests} guest(s)`,
-      price: holiday.price * guests,
+      title: paymentHoliday.name,
+      category: paymentHoliday.category,
+      details: `${paymentHoliday.destination} · ${paymentHoliday.nights} nights · ${guests} guest(s)`,
+      price: paymentHoliday.price * guests,
       guests,
     });
-    setSelectedHolidayId(holiday.id);
+    setSelectedHolidayId(paymentHoliday.id);
+    setPaymentHoliday(null);
   };
 
   return (
@@ -65,12 +74,14 @@ function HolidaysPage() {
         <div className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr]">
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">Destination</span>
-            <input
-              value={destination}
-              onChange={(event) => setDestination(event.target.value)}
-              placeholder="Hammamet"
-              className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
+            <div className="mt-2">
+              <SearchAutocomplete
+                value={destination}
+                onChange={setDestination}
+                placeholder="Hammamet"
+                type="holiday"
+              />
+            </div>
           </label>
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">Start date</span>
@@ -129,13 +140,49 @@ function HolidaysPage() {
                     onClick={() => handleBook(holiday)}
                     className="btn-primary mt-3 w-full justify-center"
                   >
-                    {selectedHolidayId === holiday.id ? "Booked" : "Book holiday"}
+                    {selectedHolidayId === holiday.id ? "Booked ✓" : "Book holiday"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user) { window.location.assign("/login?next=/holidays"); return; }
+                      toggleSavedItem({
+                        id: holiday.id,
+                        type: "holiday",
+                        title: holiday.name,
+                        subtitle: `${holiday.destination} · ${holiday.nights} nights`,
+                        price: holiday.price * guests,
+                        savedAt: new Date().toISOString(),
+                        meta: { ...holiday, guests } as Record<string, unknown>
+                      });
+                    }}
+                    className={`mt-2 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition w-full justify-center ${isSavedItem(holiday.id) ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-muted-foreground hover:border-primary"}`}
+                  >
+                    <Heart className="w-3.5 h-3.5" /> {isSavedItem(holiday.id) ? "Saved" : "Save"}
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {paymentHoliday && (
+        <PaymentModal
+          open={!!paymentHoliday}
+          onClose={() => setPaymentHoliday(null)}
+          amount={paymentHoliday.price * guests}
+          bookingType="holiday"
+          bookingDetails={{
+            name: paymentHoliday.name,
+            destination: paymentHoliday.destination,
+            category: paymentHoliday.category,
+            nights: paymentHoliday.nights,
+            date,
+            guests,
+          }}
+          onComplete={handlePaymentComplete}
+        />
       )}
     </div>
   );

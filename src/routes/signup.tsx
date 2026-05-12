@@ -28,13 +28,13 @@ function SignupPage() {
     }
   }, []);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const result = signup({ name, email, phone, password });
+    const result = await signup({ name, email, phone, password });
     if (result.success) {
       window.location.assign(next);
     } else {
-      setError(result.message);
+      setError(result.message || "An error occurred during signup");
     }
   };
 

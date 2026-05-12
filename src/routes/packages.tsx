@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PackageCard } from "@/components/site/PackageCard";
 import { useApp } from "@/components/site/AppProvider";
+import { type Package } from "@/data/packages";
 
 export const Route = createFileRoute("/packages")({
   head: () => ({
@@ -25,7 +26,7 @@ function PackagesPage() {
   const [activeDur, setActiveDur] = useState<string[]>([]);
   const [sort, setSort] = useState("popularity");
 
-  const { data: allPackages = [], isLoading } = useQuery({
+  const { data: allPackages = [], isLoading } = useQuery<Package[]>({
     queryKey: ['packages'],
     queryFn: async () => {
       const res = await fetch('/api/packages');

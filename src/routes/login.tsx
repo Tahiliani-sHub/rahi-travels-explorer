@@ -26,9 +26,9 @@ function LoginPage() {
     }
   }, []);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const success = login({ email, password });
+    const success = await login({ email, password });
     if (success) {
       window.location.assign(next);
     } else {

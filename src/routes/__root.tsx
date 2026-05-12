@@ -10,6 +10,7 @@ import {
 import { Header, Footer } from "@/components/site/Layout";
 import { BookingModalProvider } from "@/components/site/BookingModal";
 import { AppProvider } from "@/components/site/AppProvider";
+import { StripeProvider } from "@/components/providers/StripeProvider";
 
 function NotFoundComponent() {
   return (
@@ -106,15 +107,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <BookingModalProvider>
-          <Header />
-          <main className="pt-28 min-h-screen">
-            <Outlet />
-          </main>
-          <Footer />
-        </BookingModalProvider>
-      </AppProvider>
+      <StripeProvider>
+        <AppProvider>
+          <BookingModalProvider>
+            <Header />
+            <main className="pt-28 min-h-screen">
+              <Outlet />
+            </main>
+            <Footer />
+          </BookingModalProvider>
+        </AppProvider>
+      </StripeProvider>
     </QueryClientProvider>
   );
 }

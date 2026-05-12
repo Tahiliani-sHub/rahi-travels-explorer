@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  bookings  Booking[]
+  wallet    Wallet?
+  reviews   Review[]
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingId    String     @unique
+  type         String     // "flight", "hotel", "train", "holiday"
+  details      String     // JSON string
+  totalAmount  Float
+  currency     String     @default("TND")
+  status       String     @default("confirmed") // "confirmed", "cancelled", "pending", "completed"
+  bookingDate  DateTime   @default(now())
+  departDate   String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId       String   // package, hotel, flight ID
+  itemType     String   // "package", "hotel", "flight", "train"
+  rating       Int      // 1-5
+  title        String
+  comment      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, itemId])
+}
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  discountType  String   // "percentage" or "fixed"
+  discountValue Float    // percentage (0-100) or fixed amount
+  maxUses       Int      // max number of uses, -1 for unlimited
+  usedCount     Int      @default(0)
+  validFrom     DateTime
+  validTo       DateTime
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  bookingId String
+  amount    Float
+  type      String   // "charge", "refund"
+  status    String   @default("completed") // "pending", "completed", "failed"
+  paymentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

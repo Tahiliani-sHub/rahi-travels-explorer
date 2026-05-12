@@ -40,25 +40,41 @@ export type WalletTransaction = {
   pkgId?: string;
 };
 
+export type SavedItem = {
+  id: string;
+  type: "flight" | "hotel" | "train" | "holiday";
+  title: string;
+  subtitle: string;
+  price: number;
+  savedAt: string;
+  meta: Record<string, unknown>;
+};
+
 export type AppContextValue = {
   user: User | null;
   isAuthenticated: boolean;
-  login: (credentials: { email: string; password: string }) => boolean;
-  signup: (details: { name: string; email: string; phone: string; password: string }) => { success: boolean; message?: string };
+  login: (credentials: { email: string; password: string }) => Promise<boolean>;
+  signup: (details: { name: string; email: string; phone: string; password: string }) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   bookings: BookingItem[];
   bookingsForUser: BookingItem[];
-  addBooking: (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status">) => boolean;
+  addBooking: (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status" | "date">) => boolean;
   walletBalance: number;
   transactions: WalletTransaction[];
   deposit: (amount: number) => void;
-  spend: (amount: number, note: string, pkgId?: string) => boolean;
+  spend: (amount: number, note: string, pkgId?: string) => Promise<boolean>;
   savedPackageIds: string[];
   comparePackageIds: string[];
   toggleSavedPackage: (pkgId: string) => void;
   toggleComparePackage: (pkgId: string) => void;
   isSavedPackage: (pkgId: string) => boolean;
   isComparedPackage: (pkgId: string) => boolean;
+  savedItems: SavedItem[];
+  toggleSavedItem: (item: SavedItem) => void;
+  isSavedItem: (id: string) => boolean;
+  appliedCoupon: { code: string; discount: number; finalAmount: number } | null;
+  applyCouponCode: (code: string, amount: number) => Promise<boolean>;
+  removeCoupon: () => void;
 };
 
 const STORAGE_KEY = "rahi_travels_app_state";
@@ -78,6 +94,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [savedPackageIds, setSavedPackageIds] = useState<string[]>([]);
   const [comparePackageIds, setComparePackageIds] = useState<string[]>([]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; finalAmount: number } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -92,6 +110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           transactions?: WalletTransaction[];
           savedPackageIds?: string[];
           comparePackageIds?: string[];
+          savedItems?: SavedItem[];
         };
         if (parsed?.user) setUser(parsed.user);
         if (Array.isArray(parsed.accounts)) setAccounts(parsed.accounts);
@@ -100,6 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsed.transactions)) setTransactions(parsed.transactions);
         if (Array.isArray(parsed.savedPackageIds)) setSavedPackageIds(parsed.savedPackageIds);
         if (Array.isArray(parsed.comparePackageIds)) setComparePackageIds(parsed.comparePackageIds);
+        if (Array.isArray(parsed.savedItems)) setSavedItems(parsed.savedItems);
       } catch {
         // ignore invalid state
       }
@@ -118,44 +138,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
         transactions,
         savedPackageIds,
         comparePackageIds,
+        savedItems,
       }),
     );
-  }, [user, accounts, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds]);
+  }, [user, accounts, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds, savedItems]);
 
-  const login = ({ email, password }: { email: string; password: string }) => {
-    const account = accounts.find((account) => account.email.toLowerCase() === email.toLowerCase());
-    if (!account || account.password !== password) {
+  const login = async ({ email, password }: { email: string; password: string }) => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+        if (data.sessionToken) {
+          window.localStorage.setItem('sessionToken', data.sessionToken);
+        }
+        // Sync wallet balance from DB
+        fetch(`/api/wallet?userId=${data.user.id}`)
+          .then(r => r.json())
+          .then(w => { if (typeof w.balance === 'number') setWalletBalance(w.balance); })
+          .catch(() => {});
+        return true;
+      }
+      return false;
+    } catch {
       return false;
     }
-    setUser({ id: account.id, name: account.name, email: account.email, phone: account.phone });
-    return true;
   };
 
-  const signup = ({ name, email, phone, password }: { name: string; email: string; phone: string; password: string }) => {
+  const signup = async ({ name, email, phone, password }: { name: string; email: string; phone: string; password: string }) => {
     if (!name || !email || !phone || !password) {
       return { success: false, message: "All fields are required." };
     }
-    if (accounts.some((account) => account.email.toLowerCase() === email.toLowerCase())) {
-      return { success: false, message: "An account with this email already exists." };
+    
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, password })
+      });
+      
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, message: data.error || "An account with this email already exists." };
+      }
+      
+      setUser(data.user);
+      if (data.sessionToken) {
+        window.localStorage.setItem('sessionToken', data.sessionToken);
+      }
+      return { success: true };
+    } catch {
+      return { success: false, message: "Signup failed due to a network error." };
     }
-
-    const newUser: AppUserAccount = {
-      id: createTransactionId(),
-      name,
-      email,
-      phone,
-      password,
-    };
-    setAccounts((prev) => [...prev, newUser]);
-    setUser({ id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone });
-    return { success: true };
   };
 
   const logout = () => {
     setUser(null);
   };
 
-  const addBooking = (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status">) => {
+  const addBooking = (booking: Omit<BookingItem, "id" | "createdAt" | "ownerId" | "status" | "date">) => {
     if (!user) return false;
     const newBooking: BookingItem = {
       id: createTransactionId(),
@@ -169,8 +215,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const deposit = (amount: number) => {
-    if (amount <= 0) return;
+  const deposit = async (amount: number) => {
+    if (amount <= 0 || !user) return;
+    try {
+      const res = await fetch('/api/wallet/topup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, amount })
+      });
+      const data = await res.json();
+      if (res.ok && typeof data.balance === 'number') {
+        setWalletBalance(data.balance);
+      }
+    } catch {
+      // fallback to local update
+      setWalletBalance((prev) => prev + amount);
+    }
     const transaction: WalletTransaction = {
       id: createTransactionId(),
       type: "deposit",
@@ -178,12 +238,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       date: new Date().toISOString(),
       note: "Wallet top-up",
     };
-    setWalletBalance((prev) => prev + amount);
     setTransactions((prev) => [transaction, ...prev]);
   };
 
-  const spend = (amount: number, note: string, pkgId?: string) => {
-    if (amount <= 0 || amount > walletBalance) return false;
+  const spend = async (amount: number, note: string, pkgId?: string): Promise<boolean> => {
+    if (amount <= 0 || amount > walletBalance || !user) return false;
+    try {
+      const res = await fetch('/api/wallet/spend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) return false;
+      if (typeof data.balance === 'number') setWalletBalance(data.balance);
+    } catch {
+      // fallback to local update
+      setWalletBalance((prev) => prev - amount);
+    }
     const transaction: WalletTransaction = {
       id: createTransactionId(),
       type: "spend",
@@ -192,7 +264,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       note,
       pkgId,
     };
-    setWalletBalance((prev) => prev - amount);
     setTransactions((prev) => [transaction, ...prev]);
     return true;
   };
@@ -203,6 +274,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleComparePackage = (pkgId: string) => {
     setComparePackageIds((prev) => (prev.includes(pkgId) ? prev.filter((id) => id !== pkgId) : [...prev, pkgId]));
+  };
+
+  const toggleSavedItem = (item: SavedItem) => {
+    setSavedItems((prev) =>
+      prev.some((s) => s.id === item.id) ? prev.filter((s) => s.id !== item.id) : [item, ...prev],
+    );
+  };
+
+  const applyCouponCode = async (code: string, amount: number) => {
+    try {
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, amount })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Invalid coupon');
+      }
+
+      const data = await response.json();
+      setAppliedCoupon({
+        code: data.coupon,
+        discount: data.discount,
+        finalAmount: data.finalAmount
+      });
+      return true;
+    } catch (error) {
+      console.error('Coupon error:', error);
+      return false;
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
   };
 
   const value = useMemo(
@@ -225,8 +332,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleComparePackage,
       isSavedPackage: (pkgId: string) => savedPackageIds.includes(pkgId),
       isComparedPackage: (pkgId: string) => comparePackageIds.includes(pkgId),
+      savedItems,
+      toggleSavedItem,
+      isSavedItem: (id: string) => savedItems.some((s) => s.id === id),
+      appliedCoupon,
+      applyCouponCode,
+      removeCoupon,
     }),
-    [user, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds],
+    [user, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds, savedItems, appliedCoupon],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

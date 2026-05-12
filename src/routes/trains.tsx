@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Heart } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
+import { SearchAutocomplete } from "@/components/site/SearchAutocomplete";
 import { type Train } from "@/data/trains";
+import { PaymentModal } from "@/components/site/PaymentModal";
 
 export const Route = createFileRoute("/trains")({
   head: () => ({
@@ -17,15 +20,16 @@ export const Route = createFileRoute("/trains")({
 const seatClasses = ["Any", "Economy", "Business", "First"] as const;
 
 function TrainsPage() {
-  const { user, addBooking } = useApp();
+  const { user, addBooking, toggleSavedItem, isSavedItem } = useApp();
   const [origin, setOrigin] = useState("TUN");
   const [destination, setDestination] = useState("SFA");
   const [departDate, setDepartDate] = useState("2026-06-08");
   const [seatClass, setSeatClass] = useState("Any");
   const [passengers, setPassengers] = useState(1);
   const [bookedTrainId, setBookedTrainId] = useState<string | null>(null);
+  const [paymentTrain, setPaymentTrain] = useState<Train | null>(null);
 
-  const { data: results = [], isLoading } = useQuery({
+  const { data: results = [], isLoading } = useQuery<Train[]>({
     queryKey: ['trains', origin, destination, departDate, seatClass],
     queryFn: async () => {
       const params = new URLSearchParams({ origin, destination, departDate, seatClass });
@@ -41,16 +45,21 @@ function TrainsPage() {
       window.location.assign("/login?next=/trains");
       return;
     }
+    setPaymentTrain(train);
+  };
 
+  const handlePaymentComplete = () => {
+    if (!paymentTrain) return;
     addBooking({
       type: "train",
-      title: `${train.operator} ${train.trainNumber}`,
-      category: `${train.origin} → ${train.destination}`,
-      details: `${train.departDate} • ${train.departTime} → ${train.arriveTime} • ${train.seatClass}`,
-      price: train.price * passengers,
+      title: `${paymentTrain.operator} ${paymentTrain.trainNumber}`,
+      category: `${paymentTrain.origin} → ${paymentTrain.destination}`,
+      details: `${paymentTrain.departDate} • ${paymentTrain.departTime} → ${paymentTrain.arriveTime} • ${paymentTrain.seatClass}`,
+      price: paymentTrain.price * passengers,
       guests: passengers,
     });
-    setBookedTrainId(train.id);
+    setBookedTrainId(paymentTrain.id);
+    setPaymentTrain(null);
   };
 
   return (
@@ -69,21 +78,25 @@ function TrainsPage() {
         <div className="grid gap-4 md:grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr]">
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">From</span>
-            <input
-              value={origin}
-              onChange={(event) => setOrigin(event.target.value.toUpperCase())}
-              className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="TUN"
-            />
+            <div className="mt-2">
+              <SearchAutocomplete
+                value={origin}
+                onChange={(value) => setOrigin(value.toUpperCase())}
+                placeholder="TUN"
+                type="train"
+              />
+            </div>
           </label>
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">To</span>
-            <input
-              value={destination}
-              onChange={(event) => setDestination(event.target.value.toUpperCase())}
-              className="mt-2 w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="SFA"
-            />
+            <div className="mt-2">
+              <SearchAutocomplete
+                value={destination}
+                onChange={(value) => setDestination(value.toUpperCase())}
+                placeholder="SFA"
+                type="train"
+              />
+            </div>
           </label>
           <label className="block">
             <span className="text-sm font-medium text-muted-foreground">Depart</span>
@@ -155,13 +168,52 @@ function TrainsPage() {
                     onClick={() => handleBook(train)}
                     className="btn-primary mt-3 w-full justify-center"
                   >
-                    {bookedTrainId === train.id ? "Booked" : "Book train"}
+                    {bookedTrainId === train.id ? "Booked ✓" : "Book train"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user) { window.location.assign("/login?next=/trains"); return; }
+                      toggleSavedItem({
+                        id: train.id,
+                        type: "train",
+                        title: `${train.operator} ${train.trainNumber}`,
+                        subtitle: `${train.origin} → ${train.destination} · ${train.departDate}`,
+                        price: train.price * passengers,
+                        savedAt: new Date().toISOString(),
+                        meta: { ...train, passengers } as Record<string, unknown>
+                      });
+                    }}
+                    className={`mt-2 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition w-full justify-center ${isSavedItem(train.id) ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-muted-foreground hover:border-primary"}`}
+                  >
+                    <Heart className="w-3.5 h-3.5" /> {isSavedItem(train.id) ? "Saved" : "Save"}
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {paymentTrain && (
+        <PaymentModal
+          open={!!paymentTrain}
+          onClose={() => setPaymentTrain(null)}
+          amount={paymentTrain.price * passengers}
+          bookingType="train"
+          bookingDetails={{
+            operator: paymentTrain.operator,
+            trainNumber: paymentTrain.trainNumber,
+            origin: paymentTrain.origin,
+            destination: paymentTrain.destination,
+            departDate: paymentTrain.departDate,
+            departTime: paymentTrain.departTime,
+            arriveTime: paymentTrain.arriveTime,
+            seatClass: paymentTrain.seatClass,
+            passengers,
+          }}
+          onComplete={handlePaymentComplete}
+        />
       )}
     </div>
   );
