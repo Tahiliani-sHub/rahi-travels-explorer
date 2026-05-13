@@ -195,12 +195,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, phone, password })
       });
 
+      const raw = await res.text();
       let data: any;
       try {
-        data = await res.json();
+        data = JSON.parse(raw);
       } catch {
-        const text = await res.clone().text().catch(() => "(no body)");
-        console.error("Signup: non-JSON response", res.status, text.slice(0, 300));
+        console.error("Signup: non-JSON response", res.status, raw.slice(0, 300));
         return { success: false, message: `Server error (${res.status}). Check console for details.` };
       }
 
