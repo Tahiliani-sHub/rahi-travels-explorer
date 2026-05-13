@@ -155,6 +155,12 @@ const server = http.createServer(async (req, res) => {
       generateBookingPDF,
     } = handlers;
 
+    // ── Health ────────────────────────────────────────────────────────────────
+
+    if (pathname === "/api/health") {
+      return jsonResponse(res, { ok: true, ts: Date.now() });
+    }
+
     // ── Search ────────────────────────────────────────────────────────────────
 
     if (pathname === "/api/search/flights") {
