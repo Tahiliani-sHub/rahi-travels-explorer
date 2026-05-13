@@ -194,19 +194,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         headers: JSON_HEADERS,
         body: JSON.stringify({ name, email, phone, password })
       });
-      
-      const data = await res.json();
+
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.clone().text().catch(() => "(no body)");
+        console.error("Signup: non-JSON response", res.status, text.slice(0, 300));
+        return { success: false, message: `Server error (${res.status}). Check console for details.` };
+      }
+
       if (!res.ok || !data.success) {
         return { success: false, message: data.error || "An account with this email already exists." };
       }
-      
+
       setUser(data.user);
       if (data.sessionToken) {
         window.localStorage.setItem('sessionToken', data.sessionToken);
       }
       return { success: true };
-    } catch {
-      return { success: false, message: "Signup failed due to a network error." };
+    } catch (err: any) {
+      console.error("Signup fetch failed:", err);
+      return { success: false, message: "Cannot reach server. Check your connection or try again." };
     }
   };
 

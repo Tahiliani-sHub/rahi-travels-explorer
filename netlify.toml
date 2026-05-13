@@ -10,7 +10,7 @@
 # Railway service URL (e.g. https://rahi-travels-explorer.up.railway.app).
 [[redirects]]
   from = "/api/*"
-  to = "https://rahi-travels-explorer-production.up.railway.app/api/:splat"
+  to = "https://rahi-travels-explorer-production-07a0.up.railway.app/api/:splat"
   status = 200
   force = true
 

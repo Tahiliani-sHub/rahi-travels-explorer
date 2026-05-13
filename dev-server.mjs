@@ -78,10 +78,12 @@ async function getHandlers() {
 }
 
 function jsonResponse(res, data, status = 200) {
-  res.writeHead(status, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-  });
+  if (!res.headersSent) {
+    res.writeHead(status, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+  }
   res.end(JSON.stringify(data));
 }
 
@@ -102,6 +104,11 @@ function getToken(req) {
 let handlers = null;
 
 const server = http.createServer(async (req, res) => {
+  const started = Date.now();
+  const finish = (status) => {
+    console.log(`${req.method} ${req.url} → ${status} (${Date.now() - started}ms)`);
+  };
+
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -109,6 +116,7 @@ const server = http.createServer(async (req, res) => {
       "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     });
     res.end();
+    finish(204);
     return;
   }
 
@@ -118,6 +126,7 @@ const server = http.createServer(async (req, res) => {
   if (!pathname.startsWith("/api/")) {
     res.writeHead(404);
     res.end("Not found");
+    finish(404);
     return;
   }
 
@@ -125,6 +134,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method !== "GET" && req.method !== "OPTIONS") {
     if (req.headers["x-rahi-request"] !== "true") {
       jsonResponse(res, { error: "Forbidden" }, 403);
+      finish(403);
       return;
     }
   }
@@ -473,9 +483,11 @@ const server = http.createServer(async (req, res) => {
     }
 
     jsonResponse(res, { error: "Not found" }, 404);
+    finish(404);
   } catch (err) {
     console.error("[dev-server] Error:", err);
     jsonResponse(res, { error: "Internal server error", detail: err?.message }, 500);
+    finish(500);
   }
 });
 
