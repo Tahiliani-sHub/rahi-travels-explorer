@@ -1,0 +1,8 @@
+# Railway-only config: skip the Vite frontend build (Netlify handles that).
+# Only install deps + generate Prisma client, then start the API server.
+
+[phases.build]
+cmds = ["npm ci", "npx prisma generate"]
+
+[start]
+cmd = "node --import tsx/esm dev-server.mjs"
