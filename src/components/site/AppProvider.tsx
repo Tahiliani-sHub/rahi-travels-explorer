@@ -78,8 +78,6 @@ export type AppContextValue = {
   applyCouponCode: (code: string, amount: number) => Promise<boolean>;
   removeCoupon: () => void;
   refreshBalance: () => Promise<void>;
-  darkMode: boolean;
-  toggleDarkMode: () => void;
 };
 
 const STORAGE_KEY = "rahi_travels_app_state";
@@ -108,19 +106,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [comparePackageIds, setComparePackageIds] = useState<string[]>([]);
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; finalAmount: number } | null>(null);
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("rahi_dark_mode") === "true";
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (darkMode) root.classList.add("dark");
-    else root.classList.remove("dark");
-    window.localStorage.setItem("rahi_dark_mode", String(darkMode));
-  }, [darkMode]);
-
-  const toggleDarkMode = () => setDarkMode(d => !d);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -401,10 +386,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       applyCouponCode,
       removeCoupon,
       refreshBalance,
-      darkMode,
-      toggleDarkMode,
     }),
-    [user, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds, savedItems, appliedCoupon, darkMode],
+    [user, bookings, walletBalance, transactions, savedPackageIds, comparePackageIds, savedItems, appliedCoupon],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
