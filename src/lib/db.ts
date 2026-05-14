@@ -57,7 +57,7 @@ export async function findUserByEmail(email: string) {
 
 export async function validateUserPassword(email: string, password: string) {
   const user = await findUserByEmail(email);
-  if (!user) return null;
+  if (!user || !user.password) return null;
 
   const isValid = await verifyPassword(password, user.password);
   if (!isValid) return null;
@@ -409,6 +409,32 @@ export async function toggleSavedItemDB(userId: string, item: { itemId: string; 
   }
   await db.savedItem.create({ data: { userId, itemId: item.itemId, type: item.type, title: item.title, subtitle: item.subtitle, price: item.price, meta: JSON.stringify(item.meta) } });
   return { saved: true };
+}
+
+export async function findOrCreateGoogleUser(googleId: string, email: string, name: string) {
+  const db = getPrismaClient();
+
+  // Existing Google-linked account
+  let user = await db.user.findUnique({ where: { googleId } });
+  if (user) return { id: user.id, email: user.email, name: user.name, phone: user.phone };
+
+  // Link Google ID to existing email account
+  user = await db.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (user) {
+    user = await db.user.update({ where: { id: user.id }, data: { googleId } });
+    return { id: user.id, email: user.email, name: user.name, phone: user.phone };
+  }
+
+  // Create new Google user (no password)
+  const created = await db.user.create({
+    data: {
+      email: email.toLowerCase(),
+      name,
+      googleId,
+      wallet: { create: { balance: 0 } },
+    },
+  });
+  return { id: created.id, email: created.email, name: created.name, phone: created.phone };
 }
 
 export async function closePrisma() {

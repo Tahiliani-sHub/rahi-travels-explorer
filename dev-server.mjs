@@ -8,7 +8,7 @@
 
 import http from "node:http";
 import { URL } from "node:url";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHmac } from "node:crypto";
@@ -49,7 +49,7 @@ async function getHandlers() {
       getWalletBalance, topUpWallet, spendFromWallet,
       createReview, getReviewsForItem, getAverageRatingForItem, deleteReview,
       validateCoupon, applyCoupon, listCoupons, createCoupon,
-      getSavedItems, toggleSavedItemDB,
+      getSavedItems, toggleSavedItemDB, findOrCreateGoogleUser,
     },
     { generateBookingPDF },
   ] = await Promise.all([
@@ -73,6 +73,7 @@ async function getHandlers() {
     getWalletBalance, topUpWallet, spendFromWallet,
     createReview, getReviewsForItem, getAverageRatingForItem, deleteReview,
     validateCoupon, applyCoupon, listCoupons, createCoupon,
+    getSavedItems, toggleSavedItemDB, findOrCreateGoogleUser,
     generateBookingPDF,
   };
 }
@@ -151,7 +152,7 @@ const server = http.createServer(async (req, res) => {
       getWalletBalance, topUpWallet, spendFromWallet,
       createReview, getReviewsForItem, getAverageRatingForItem, deleteReview,
       validateCoupon, applyCoupon, listCoupons, createCoupon,
-      getSavedItems, toggleSavedItemDB,
+      getSavedItems, toggleSavedItemDB, findOrCreateGoogleUser,
       generateBookingPDF,
     } = handlers;
 
@@ -227,6 +228,35 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/auth/logout" && req.method === "POST") {
       await deleteSession(getToken(req));
       return jsonResponse(res, { success: true });
+    }
+
+    if (pathname === "/api/auth/google/exchange" && req.method === "POST") {
+      const { code, redirectUri } = await readBody(req);
+      if (!code || !redirectUri) return jsonResponse(res, { error: "Missing code or redirectUri" }, 400);
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      if (!clientId || !clientSecret) return jsonResponse(res, { error: "Google OAuth not configured" }, 503);
+      // Exchange authorization code for tokens
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code" }).toString(),
+      });
+      const tokenData = await tokenRes.json();
+      if (!tokenData.access_token) {
+        console.error("[google/exchange] token exchange failed:", tokenData);
+        return jsonResponse(res, { error: tokenData.error_description || "Failed to exchange code" }, 400);
+      }
+      // Fetch Google user info
+      const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      const userInfo = await userInfoRes.json();
+      if (!userInfo.id || !userInfo.email) return jsonResponse(res, { error: "Failed to retrieve Google profile" }, 400);
+      const user = await findOrCreateGoogleUser(userInfo.id, userInfo.email, userInfo.name || userInfo.email.split("@")[0]);
+      const token = generateSessionToken();
+      await createSession(user.id, token);
+      return jsonResponse(res, { success: true, user, sessionToken: token });
     }
 
     if (pathname === "/api/auth/profile") {

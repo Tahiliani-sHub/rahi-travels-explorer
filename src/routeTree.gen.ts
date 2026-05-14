@@ -24,6 +24,7 @@ import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as SavedRouteImport } from './routes/saved'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
+import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.callback'
 
 const PackagesRoute = PackagesRouteImport.update({
   id: '/packages',
@@ -90,6 +91,11 @@ const AdminCouponsRoute = AdminCouponsRouteImport.update({
   path: '/admin/coupons',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
+  id: '/auth/google/callback',
+  path: '/auth/google/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,13 +160,14 @@ export interface FileRoutesById {
   '/packages': typeof PackagesRouteWithChildren
   '/packages/$id': typeof PackagesIdRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
+  fullPaths: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons' | '/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
-  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons'
+  to: '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons' | '/auth/google/callback'
+  id: '__root__' | '/' | '/about' | '/flights' | '/hotels' | '/trains' | '/holidays' | '/login' | '/signup' | '/account' | '/bookings' | '/compare' | '/saved' | '/packages' | '/packages/$id' | '/admin/coupons' | '/auth/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +184,7 @@ export interface RootRouteChildren {
   SavedRoute: typeof SavedRoute
   PackagesRoute: typeof PackagesRouteWithChildren
   AdminCouponsRoute: typeof AdminCouponsRoute
+  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -284,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCouponsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/google/callback': {
+      id: '/auth/google/callback'
+      path: '/auth/google/callback'
+      fullPath: '/auth/google/callback'
+      preLoaderRoute: typeof AuthGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -314,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   SavedRoute: SavedRoute,
   PackagesRoute: PackagesRouteWithChildren,
   AdminCouponsRoute: AdminCouponsRoute,
+  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

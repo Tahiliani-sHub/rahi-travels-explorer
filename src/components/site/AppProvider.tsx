@@ -56,6 +56,7 @@ export type AppContextValue = {
   login: (credentials: { email: string; password: string }) => Promise<boolean>;
   signup: (details: { name: string; email: string; phone: string; password: string }) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  loginWithToken: (user: User, sessionToken: string) => void;
   updateProfile: (data: Partial<User>) => void;
   bookings: BookingItem[];
   bookingsForUser: BookingItem[];
@@ -219,6 +220,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithToken = (userData: User, sessionToken: string) => {
+    setUser(userData);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("sessionToken", sessionToken);
+    }
+  };
+
   const logout = () => {
     const token = typeof window !== "undefined" ? window.localStorage.getItem("sessionToken") ?? "" : "";
     if (token) {
@@ -356,6 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       login,
       signup,
       logout,
+      loginWithToken,
       updateProfile,
       bookings,
       bookingsForUser: user ? bookings.filter((booking) => booking.ownerId === user.id) : [],
