@@ -1,8 +1,10 @@
 # Railway-only config: skip the Vite frontend build (Netlify handles that).
-# Only install deps + generate Prisma client, then start the API server.
+# Nixpacks already runs npm ci in the setup phase (which also triggers
+# postinstall: prisma generate). We only override the build phase to prevent
+# npm run build from creating dist/ and triggering Railway's static file server.
 
 [phases.build]
-cmds = ["npm ci", "npx prisma generate"]
+cmds = ["echo 'Frontend build skipped — handled by Netlify'"]
 
 [start]
 cmd = "node --import tsx/esm dev-server.mjs"
