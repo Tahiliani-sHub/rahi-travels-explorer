@@ -37,7 +37,7 @@ export function Header() {
   return (
     <>
       {/* Top info bar */}
-      <div className="fixed inset-x-0 top-0 z-50 bg-white/95 border-b border-gray-200 backdrop-blur-sm">
+      <div className="fixed inset-x-0 top-0 z-50 bg-white/95 dark:bg-[#0d0f18]/95 border-b border-gray-200 dark:border-[#252840] backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-5 py-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground">
           <div className="flex flex-wrap items-center gap-4">
             {user ? (
@@ -109,7 +109,8 @@ export function Header() {
               rel="noopener noreferrer"
               className="btn-primary hidden sm:inline-flex items-center gap-2 text-sm px-3 py-2"
             >
-              <MessageCircle className="w-4 h-4" /> WhatsApp
+              <MessageCircle className="w-4 h-4" />
+              <span className="hidden xl:inline">WhatsApp</span>
             </a>
             <button
               className="lg:hidden p-2 rounded-lg hover:bg-secondary/60 transition-colors"
@@ -134,7 +135,7 @@ export function Header() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden border-t bg-white/98 backdrop-blur-sm shadow-xl animate-slide-down">
+          <div className="lg:hidden border-t bg-white/98 dark:bg-[#161929]/98 backdrop-blur-sm shadow-xl animate-slide-down">
             <div className="px-5 py-5 flex flex-col gap-1">
               {navLinks.map(({ to, label }) => (
                 <Link
@@ -172,7 +173,7 @@ export function Header() {
       </header>
 
       {/* Secondary trust bar */}
-      <div className="mt-10 bg-gradient-to-b from-slate-100 via-white to-white border-b border-gray-200" style={{ marginTop: '104px' }}>
+      <div className="mt-10 bg-gradient-to-b from-slate-100 via-white to-white dark:from-[#0d0f18] dark:via-[#0d0f18] dark:to-[#0d0f18] border-b border-gray-200 dark:border-[#252840]" style={{ marginTop: '104px' }}>
         <div className="mx-auto max-w-7xl px-5 py-2.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Sparkles className="w-4 h-4 text-primary" />
@@ -181,13 +182,13 @@ export function Header() {
           <div className="flex flex-wrap gap-2 text-sm">
             <Link
               to="/saved"
-              className="rounded-full bg-slate-100 px-3 py-1 hover:bg-primary/10 hover:text-primary transition-colors font-medium"
+              className="rounded-full bg-slate-100 dark:bg-[#1c1f30] px-3 py-1 hover:bg-primary/10 hover:text-primary transition-colors font-medium"
             >
               Saved {savedPackageIds.length + savedItems.length > 0 ? `· ${savedPackageIds.length + savedItems.length}` : ''}
             </Link>
             <Link
               to="/compare"
-              className="rounded-full bg-slate-100 px-3 py-1 hover:bg-primary/10 hover:text-primary transition-colors font-medium"
+              className="rounded-full bg-slate-100 dark:bg-[#1c1f30] px-3 py-1 hover:bg-primary/10 hover:text-primary transition-colors font-medium"
             >
               Compare {comparePackageIds.length > 0 ? `· ${comparePackageIds.length}` : ''}
             </Link>
