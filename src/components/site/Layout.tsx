@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X, MessageCircle, Wallet, Sparkles } from "lucide-react";
+import { Menu, X, MessageCircle, Wallet, Sparkles, Sun, Moon } from "lucide-react";
 import { useApp } from "./AppProvider";
 import { WalletDrawer } from "./WalletDrawer";
 
@@ -8,7 +8,7 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { user, logout, walletBalance, savedPackageIds, comparePackageIds, savedItems } = useApp();
+  const { user, logout, walletBalance, savedPackageIds, comparePackageIds, savedItems, darkMode, toggleDarkMode } = useApp();
   const routerState = useRouterState();
   const waUrl = `https://wa.me/21671000000?text=${encodeURIComponent("Hi Rahi Travels! I'd like to plan a trip.")}`;
 
@@ -79,6 +79,14 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              aria-label="Toggle dark mode"
+              className="p-2 rounded-xl hover:bg-secondary/60 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <button
               type="button"
               className="btn-outline hidden sm:inline-flex items-center gap-2 text-sm px-3 py-2"

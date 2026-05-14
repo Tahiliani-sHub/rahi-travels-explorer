@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Moon, Sun } from "lucide-react";
 import { useApp } from "@/components/site/AppProvider";
 
 export const Route = createFileRoute("/account")({
@@ -18,7 +19,7 @@ function authHeader() {
 }
 
 function AccountPage() {
-  const { user, updateProfile, logout, walletBalance, transactions, refreshBalance, recordTransaction, bookingsForUser } = useApp();
+  const { user, updateProfile, logout, walletBalance, transactions, refreshBalance, recordTransaction, bookingsForUser, darkMode, toggleDarkMode } = useApp();
   const [topUpAmount, setTopUpAmount] = useState(200);
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [topUpError, setTopUpError] = useState("");
@@ -208,6 +209,18 @@ function AccountPage() {
                   <Link to="/admin/coupons" className="text-primary hover:underline">Coupon admin</Link>
                 )}
               </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.24em] mb-3">Appearance</h3>
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                className="flex items-center gap-3 w-full rounded-2xl border border-border px-4 py-3 text-sm font-medium hover:bg-secondary/60 transition-colors"
+              >
+                {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
+                {darkMode ? "Light mode" : "Dark mode"}
+                <span className="ml-auto text-xs text-muted-foreground">{darkMode ? "On" : "Off"}</span>
+              </button>
             </div>
           </div>
         </aside>
