@@ -470,6 +470,10 @@ const server = http.createServer(async (req, res) => {
     // ── Coupons ───────────────────────────────────────────────────────────────
 
     if (pathname === "/api/admin/coupons") {
+      const adminUserId = await validateSession(getToken(req));
+      if (!adminUserId) return jsonResponse(res, { error: "Unauthorized" }, 401);
+      const adminUser = await findUserById(adminUserId);
+      if (adminUser?.email !== process.env.ADMIN_EMAIL) return jsonResponse(res, { error: "Forbidden" }, 403);
       if (req.method === "GET") return jsonResponse(res, await listCoupons());
       if (req.method === "POST") {
         const { code, discountType, discountValue, maxUses = -1, validFrom, validTo } = await readBody(req);

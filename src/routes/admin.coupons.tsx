@@ -77,10 +77,12 @@ function CouponAdminPage() {
     }
   };
 
-  if (!user) {
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
+
+  if (!user || user.email !== ADMIN_EMAIL) {
     return (
       <div className="mx-auto max-w-2xl px-5 py-24 text-center">
-        <p className="text-muted-foreground">Sign in to access admin tools.</p>
+        <p className="text-muted-foreground">You don't have permission to access this page.</p>
       </div>
     );
   }

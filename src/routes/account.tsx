@@ -204,7 +204,9 @@ function AccountPage() {
                 <Link to="/bookings" className="text-primary hover:underline">My bookings</Link>
                 <Link to="/flights" className="text-primary hover:underline">Search flights</Link>
                 <Link to="/hotels" className="text-primary hover:underline">Search hotels</Link>
-                <Link to="/admin/coupons" className="text-primary hover:underline">Coupon admin</Link>
+                {user?.email === import.meta.env.VITE_ADMIN_EMAIL && (
+                  <Link to="/admin/coupons" className="text-primary hover:underline">Coupon admin</Link>
+                )}
               </div>
             </div>
           </div>
